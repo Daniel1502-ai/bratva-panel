@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<title>Service Panel — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue: #2477c9;
+    --blue-bright: #4aa3ff;
+    --blue-glow: rgba(36,119,201,0.5);
+    --dark: #070a0f;
+    --dark2: #0f141b;
+    --dark3: #161d27;
+    --dark4: #1e2731;
+    --border: #1f2a36;
+    --border2: #2a3949;
+    --text: #e8eef5;
+    --muted: #6a7584;
+    --green: #27ae60;
+    --green-bright: #2ecc71;
+    --green-dim: rgba(39,174,96,0.15);
+    --yellow: #f39c12;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Rajdhani', sans-serif;
+    background: var(--dark);
+    color: var(--text);
+    min-height: 100vh;
+    background-image:
+      linear-gradient(rgba(7,10,15,.85),rgba(7,10,15,.92)),
+      url("https://i.imgur.com/7YqgLz2.jpeg");
+    background-size: cover; background-position: center; background-attachment: fixed;
+    display: flex;
+  }
+
+  :root { --sb-collapsed: 64px; --sb-expanded: 220px; }
+
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: var(--sb-collapsed);
+    background: rgba(15,20,27,.96);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    z-index: 200;
+    transition: width 0.28s cubic-bezier(.4,0,.2,1);
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+  }
+  .sidebar::after {
+    content: ''; position: absolute;
+    top: 0; right: -1px; bottom: 0; width: 1px;
+    background: linear-gradient(180deg, transparent, var(--blue), transparent);
+    opacity: 0; transition: opacity 0.28s;
+  }
+  .sidebar:hover { width: var(--sb-expanded); }
+  .sidebar:hover::after { opacity: 1; }
+
+  .sb-brand { height:64px; display:flex; align-items:center; padding:0 18px; gap:14px; border-bottom:1px solid var(--border); flex-shrink:0; overflow:hidden; white-space:nowrap; }
+  .sb-brand-icon { font-size:22px; color:var(--blue-bright); text-shadow:0 0 20px var(--blue-glow); flex-shrink:0; width:28px; text-align:center; }
+  .sb-brand-text { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:4px; color:var(--blue-bright); text-shadow:0 0 20px var(--blue-glow); opacity:0; transition:opacity .2s .05s; }
+  .sidebar:hover .sb-brand-text { opacity:1; }
+
+  .sb-nav { flex:1; display:flex; flex-direction:column; padding:10px 0; gap:2px; overflow:hidden; }
+  .sb-link { display:flex; align-items:center; gap:14px; padding:0 18px; height:44px; text-decoration:none; color:var(--muted); font-family:'Rajdhani',sans-serif; font-weight:600; font-size:13px; letter-spacing:2px; text-transform:uppercase; white-space:nowrap; transition:color .15s, background .15s; border-left:2px solid transparent; }
+  .sb-link:hover { color:var(--text); background:rgba(255,255,255,.04); }
+  .sb-link.active { color:var(--text); background:rgba(36,119,201,.12); border-left-color:var(--blue-bright); }
+  .sb-icon { font-size:18px; flex-shrink:0; width:28px; text-align:center; line-height:1; }
+  .sb-label { opacity:0; transition:opacity .18s .06s; }
+  .sidebar:hover .sb-label { opacity:1; }
+
+  .sb-bottom { border-top:1px solid var(--border); padding:12px 0; display:flex; flex-direction:column; gap:4px; overflow:hidden; flex-shrink:0; }
+  .sb-user { display:flex; align-items:center; gap:14px; padding:6px 18px; white-space:nowrap; overflow:hidden; }
+  .sb-user-icon { font-size:16px; flex-shrink:0; width:28px; text-align:center; color:var(--muted); }
+  .sb-user-info { display:flex; flex-direction:column; gap:1px; opacity:0; transition:opacity .18s .06s; min-width:0; }
+  .sidebar:hover .sb-user-info { opacity:1; }
+  .sb-user-label { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); }
+  .sb-username { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:14px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:130px; }
+  .sb-logout { display:flex; align-items:center; gap:14px; padding:0 18px; height:40px; background:transparent; color:var(--blue-bright); border:none; cursor:pointer; font-family:'Rajdhani',sans-serif; font-weight:700; font-size:12px; letter-spacing:2px; text-transform:uppercase; white-space:nowrap; transition:background .15s,color .15s; width:100%; text-align:left; }
+  .sb-logout:hover { background:rgba(36,119,201,.18); color:white; }
+  .sb-logout-icon { font-size:16px; flex-shrink:0; width:28px; text-align:center; }
+  .sb-logout-label { opacity:0; transition:opacity .18s .06s; }
+  .sidebar:hover .sb-logout-label { opacity:1; }
+
+  .main-content { margin-left:var(--sb-collapsed); flex:1; min-width:0; transition:margin-left .28s cubic-bezier(.4,0,.2,1); }
+
+  .page-header { padding:40px 36px 28px; display:flex; align-items:flex-end; justify-content:space-between; }
+  .page-header-left { display:flex; flex-direction:column; gap:4px; }
+  .page-label { font-size:11px; letter-spacing:4px; text-transform:uppercase; color:var(--blue-bright); }
+  .page-title { font-family:'Bebas Neue',sans-serif; font-size:46px; letter-spacing:6px; line-height:1; }
+  .page-sub { font-size:13px; color:var(--muted); letter-spacing:.5px; margin-top:4px; }
+
+  .stats-bar { display:flex; gap:1px; margin:0 36px 28px; background:var(--border); border-radius:4px; overflow:hidden; border:1px solid var(--border); }
+  .stat { flex:1; background:rgba(15,20,27,.85); padding:16px 22px; display:flex; flex-direction:column; gap:3px; }
+  .stat-value { font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:2px; color:var(--blue-bright); line-height:1; }
+  .stat-label { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); }
+
+  .table-wrap { margin:0 36px 48px; border:1px solid var(--border); border-radius:4px; overflow:hidden; background:rgba(15,20,27,.85); backdrop-filter:blur(6px); }
+  .table-toolbar { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; background:var(--dark3); border-bottom:1px solid var(--border2); gap:12px; }
+  .search-input { font-family:'Rajdhani',sans-serif; font-size:13px; font-weight:500; background:var(--dark4); color:var(--text); border:1px solid var(--border2); border-radius:3px; padding:8px 14px; outline:none; width:240px; transition:border-color .15s; }
+  .search-input:focus { border-color:var(--blue); }
+  .search-input::placeholder { color:#3b4654; }
+  .toolbar-label { font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); font-weight:700; }
+
+  table { width:100%; border-collapse:collapse; }
+  thead tr { background:var(--dark3); border-bottom:1px solid var(--border2); }
+  th { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); padding:13px 18px; text-align:left; }
+  th:first-child { padding-left:24px; }
+  tbody tr { border-bottom:1px solid var(--border); transition:background .15s; }
+  tbody tr:last-child { border-bottom:none; }
+  tbody tr:hover { background:rgba(255,255,255,.025); }
+  td { padding:12px 18px; font-size:14px; vertical-align:middle; }
+  td:first-child { padding-left:24px; }
+
+  .col-id { color:var(--muted); font-size:12px; font-weight:600; width:48px; }
+  .col-user { font-weight:700; letter-spacing:.5px; }
+
+  .role-badge { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:4px 10px; border-radius:2px; border:1px solid; }
+  .role-badge.leader { background:rgba(36,119,201,.18); border-color:var(--blue); color:var(--blue-bright); }
+  .role-badge.member { background:rgba(106,117,132,.15); border-color:#3b4654; color:#9aa5b3; }
+
+  .role-select { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:12px; letter-spacing:1px; text-transform:uppercase; background:var(--dark3); color:var(--text); border:1px solid var(--border2); border-radius:3px; padding:7px 12px; cursor:pointer; outline:none; transition:border-color .15s; }
+  .role-select:focus { border-color:var(--blue); }
+  .role-select option { background:var(--dark3); }
+
+  .btn-save-role { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; background:var(--blue); color:white; border:none; padding:7px 14px; border-radius:3px; cursor:pointer; transition:all .15s; white-space:nowrap; }
+  .btn-save-role:hover { background:var(--blue-bright); box-shadow:0 0 12px var(--blue-glow); }
+  .btn-save-role:disabled { opacity:.4; cursor:not-allowed; }
+
+  .btn-delete-user { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; background:transparent; color:var(--muted); border:1px solid var(--border2); padding:7px 12px; border-radius:3px; cursor:pointer; transition:all .15s; }
+  .btn-delete-user:hover { color:#ff6b6b; border-color:#c0392b; background:rgba(192,57,43,.08); }
+
+  .actions-cell { display:flex; gap:8px; align-items:center; }
+
+  tr.self-row { background:rgba(36,119,201,.05); }
+  .self-tag { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); background:var(--dark3); border:1px solid var(--border2); padding:2px 7px; border-radius:2px; margin-left:8px; }
+
+  .empty-state { text-align:center; padding:60px 20px; color:var(--muted); }
+  .empty-icon { font-size:32px; margin-bottom:10px; }
+
+  .toast { position:fixed; bottom:28px; right:28px; background:var(--dark3); border:1px solid var(--blue); color:white; font-family:'Rajdhani',sans-serif; font-weight:600; font-size:14px; letter-spacing:1px; padding:14px 24px; border-radius:4px; box-shadow:0 8px 32px rgba(0,0,0,.5),0 0 20px var(--blue-glow); transform:translateY(80px); opacity:0; transition:all .3s ease; z-index:999; }
+  .toast.show { transform:translateY(0); opacity:1; }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sb-brand">
+    <span class="sb-brand-icon">⚙</span>
+    <span class="sb-brand-text">SERVICE</span>
+  </div>
+  <nav class="sb-nav">
+    <a href="service-dashboard.html" class="sb-link"><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
+    <a href="service-invoiri.html" class="sb-link"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
+    <a href="service-admin.html" class="sb-link active" id="adminLink"><span class="sb-icon">🛡</span><span class="sb-label">Admin</span></a>
+    <a href="/" class="sb-link"><span class="sb-icon">↩</span><span class="sb-label">Schimbă</span></a>
+  </nav>
+  <div class="sb-bottom">
+    <div class="sb-user">
+      <span class="sb-user-icon">👤</span>
+      <div class="sb-user-info">
+        <span class="sb-user-label">Conectat ca</span>
+        <span class="sb-username" id="navUsername">—</span>
+      </div>
+    </div>
+    <button class="sb-logout" onclick="logout()">
+      <span class="sb-logout-icon">⏻</span>
+      <span class="sb-logout-label">Logout</span>
+    </button>
+  </div>
+</aside>
+
+<div class="main-content">
+
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-label">Administrare</div>
+    <div class="page-title">🛡 Admin Panel</div>
+    <div class="page-sub">Gestionează conturile și rolurile membrilor Service.</div>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat"><div class="stat-value" id="statTotal">—</div><div class="stat-label">Total Conturi</div></div>
+  <div class="stat"><div class="stat-value" id="statLeaders">—</div><div class="stat-label">Leaderi</div></div>
+  <div class="stat"><div class="stat-value" id="statMembers">—</div><div class="stat-label">Membri</div></div>
+</div>
+
+<div class="table-wrap">
+  <div class="table-toolbar">
+    <input class="search-input" id="searchInput" placeholder="🔍  Caută username..." oninput="filterTable()">
+    <span class="toolbar-label" id="countLabel">— conturi</span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Username</th>
+        <th>Rol Curent</th>
+        <th>Schimbă Rol</th>
+        <th>Acțiuni</th>
+      </tr>
+    </thead>
+    <tbody id="usersBody"></tbody>
+  </table>
+</div>
+
+<div class="toast" id="toast"></div>
+
+</div>
+
+<script>
+let currentUser = null;
+let allUsers = [];
+
+async function init(){
+  const res = await fetch("/me");
+  currentUser = await res.json();
+  if(!currentUser){ location.href="service-login.html"; return; }
+  if(currentUser.role.toLowerCase() !== "leader"){ location.href = "service-dashboard.html"; return; }
+  document.getElementById("navUsername").textContent = currentUser.username;
+  await loadUsers();
+}
+
+async function loadUsers(){
+  const res = await fetch("/admin/users");
+  if(!res.ok){ showToast("⚠ Eroare la încărcare", true); return; }
+  allUsers = await res.json();
+  renderUsers(allUsers);
+  updateStats(allUsers);
+}
+
+function updateStats(users){
+  document.getElementById("statTotal").textContent   = users.length;
+  document.getElementById("statLeaders").textContent = users.filter(u => u.role.toLowerCase() === "leader").length;
+  document.getElementById("statMembers").textContent = users.filter(u => u.role.toLowerCase() === "member").length;
+}
+
+function filterTable(){
+  const q = document.getElementById("searchInput").value.toLowerCase();
+  renderUsers(allUsers.filter(u => u.username.toLowerCase().includes(q)));
+}
+
+function renderUsers(users){
+  const tbody = document.getElementById("usersBody");
+  document.getElementById("countLabel").textContent = `${users.length} cont${users.length !== 1 ? "uri" : ""}`;
+
+  if(!users.length){
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">👤</div><p>Nu există conturi.</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = users.map(u => {
+    const isSelf = u.id === currentUser.id;
+    const roleClass = u.role.toLowerCase() === "leader" ? "leader" : "member";
+    const selfTag = isSelf ? `<span class="self-tag">TU</span>` : "";
+    return `
+    <tr class="${isSelf ? "self-row" : ""}" id="row-${u.id}">
+      <td class="col-id">${u.id}</td>
+      <td class="col-user">${u.username}${selfTag}</td>
+      <td>
+        <span class="role-badge ${roleClass}" id="badge-${u.id}">
+          ${u.role.toLowerCase() === "leader" ? "⭐" : "👤"} ${u.role}
+        </span>
+      </td>
+      <td>
+        <select class="role-select" id="sel-${u.id}" ${isSelf ? "disabled title='Nu îți poți schimba propriul rol'" : ""}>
+          <option value="member" ${u.role.toLowerCase() === "member" ? "selected" : ""}>👤 Member</option>
+          <option value="leader" ${u.role.toLowerCase() === "leader" ? "selected" : ""}>⭐ Leader</option>
+        </select>
+      </td>
+      <td>
+        <div class="actions-cell">
+          <button class="btn-save-role" onclick="saveRole(${u.id})" ${isSelf ? "disabled" : ""}>💾 Salvează</button>
+          <button class="btn-delete-user" onclick="deleteUser(${u.id}, '${u.username}')" ${isSelf ? "disabled title='Nu te poți șterge pe tine însuți'" : ""}>🗑 Șterge</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+async function saveRole(userId){
+  const sel = document.getElementById("sel-" + userId);
+  const newRole = sel.value;
+  const res = await fetch(`/admin/users/${userId}/role`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ role: newRole })
+  });
+  if(!res.ok){ showToast("⚠ Eroare la salvare", true); return; }
+  const badge = document.getElementById("badge-" + userId);
+  badge.className = `role-badge ${newRole}`;
+  badge.innerHTML = `${newRole === "leader" ? "⭐" : "👤"} ${newRole}`;
+  const u = allUsers.find(u => u.id === userId);
+  if(u) u.role = newRole;
+  updateStats(allUsers);
+  showToast("✓ Rol actualizat cu succes");
+}
+
+async function deleteUser(userId, username){
+  if(!confirm(`Ștergi contul "${username}"? Această acțiune nu poate fi anulată.`)) return;
+  const res = await fetch(`/admin/users/${userId}`, { method: "DELETE" });
+  if(!res.ok){ showToast("⚠ Eroare la ștergere", true); return; }
+  allUsers = allUsers.filter(u => u.id !== userId);
+  renderUsers(allUsers);
+  updateStats(allUsers);
+  showToast("✓ Cont șters");
+}
+
+function showToast(msg, isError = false){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.style.borderColor = isError ? "#f39c12" : "var(--blue)";
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 3000);
+}
+
+async function logout(){
+  await fetch("/logout", { method: "POST" }).catch(()=>{});
+  location.href="service-login.html";
+}
+
+init();
+</script>
+</body>
+</html>

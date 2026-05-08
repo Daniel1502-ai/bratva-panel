@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<title>Bratva Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #c0392b;
+    --red-bright: #e74c3c;
+    --red-glow: rgba(192,57,43,0.5);
+    --dark: #0a0a0a;
+    --dark2: #111111;
+    --dark3: #1a1a1a;
+    --dark4: #222222;
+    --border: #2a2a2a;
+    --border2: #333333;
+    --text: #e8e8e8;
+    --muted: #666;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--dark);
+    /* Background image with overlay */
+    background-image:
+      linear-gradient(rgba(0,0,0,0.72), rgba(0,0,0,0.72)),
+      url("https://i.imgur.com/gE4Jskd.jpeg");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    color: var(--text);
+    /* subtle grid overlay */
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(255,255,255,0.012) 80px, rgba(255,255,255,0.012) 81px),
+      repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(255,255,255,0.012) 80px, rgba(255,255,255,0.012) 81px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── CARD ── */
+  .card {
+    position: relative;
+    z-index: 1;
+    width: 400px;
+    background: rgba(17,17,17,0.92);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(192,57,43,0.08);
+    backdrop-filter: blur(8px);
+    animation: fadeUp 0.5s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Red accent line at top */
+  .card::before {
+    content: '';
+    display: block;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--red-bright), transparent);
+  }
+
+  /* ── HEADER ── */
+  .card-header {
+    padding: 32px 36px 24px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+
+  .brand {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    letter-spacing: 8px;
+    color: var(--red-bright);
+    text-shadow: 0 0 30px var(--red-glow);
+    line-height: 1;
+  }
+
+  .brand-sub {
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  /* ── TABS ── */
+  .tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tab-btn {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: transparent;
+    border: none;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 2px solid transparent;
+    position: relative;
+    top: 1px;
+  }
+
+  .tab-btn:hover { color: var(--text); background: rgba(255,255,255,0.02); }
+
+  .tab-btn.active {
+    color: var(--red-bright);
+    border-bottom-color: var(--red-bright);
+    background: rgba(192,57,43,0.06);
+  }
+
+  /* ── BODY ── */
+  .card-body { padding: 28px 36px 32px; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: flex; flex-direction: column; gap: 14px; animation: fadeIn 0.2s ease; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── FIELD ── */
+  .field { display: flex; flex-direction: column; gap: 6px; }
+
+  .field label {
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 700;
+  }
+
+  .field input {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    background: var(--dark3);
+    color: var(--text);
+    border: 1px solid var(--border2);
+    border-radius: 3px;
+    padding: 11px 14px;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+    width: 100%;
+  }
+
+  .field input::placeholder { color: #444; }
+
+  .field input:focus {
+    border-color: var(--red);
+    background: var(--dark4);
+  }
+
+  /* ── BUTTON ── */
+  .btn-main {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    background: var(--red);
+    color: white;
+    border: none;
+    padding: 13px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    margin-top: 4px;
+  }
+
+  .btn-main:hover {
+    background: var(--red-bright);
+    box-shadow: 0 0 24px var(--red-glow);
+    transform: translateY(-1px);
+  }
+
+  .btn-main:active { transform: translateY(0); }
+
+  /* ── DIVIDER ── */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--border2);
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── ERROR / SUCCESS ── */
+  .msg {
+    font-size: 12px;
+    letter-spacing: 1px;
+    padding: 10px 14px;
+    border-radius: 3px;
+    display: none;
+    font-weight: 600;
+  }
+  .msg.error   { background: rgba(192,57,43,0.15); border: 1px solid var(--red); color: var(--red-bright); }
+  .msg.success { background: rgba(39,174,96,0.12); border: 1px solid #27ae60; color: #2ecc71; }
+  .msg.show    { display: block; }
+
+  /* ── FOOTER ── */
+  .card-footer {
+    padding: 14px 36px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--muted);
+  }
+
+  /* ── ROLE RADIO ── */
+  .role-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .role-opt { display: none; }
+  .role-label {
+    display: block;
+    padding: 9px;
+    text-align: center;
+    border: 1px solid var(--border2);
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--dark3);
+  }
+  .role-opt:checked + .role-label {
+    background: rgba(192,57,43,0.18);
+    border-color: var(--red);
+    color: var(--red-bright);
+  }
+  .role-label:hover { border-color: #444; color: var(--text); }
+  .back{ position:fixed; top:20px; left:20px; z-index:10; font-family:'Rajdhani',sans-serif; font-weight:700; font-size:12px; letter-spacing:2px; text-transform:uppercase; text-decoration:none; color:rgba(255,255,255,.65); background:rgba(0,0,0,.45); border:1px solid rgba(255,255,255,.2); padding:7px 16px; border-radius:3px; backdrop-filter:blur(6px); transition:color .2s,border-color .2s,background .2s; }
+  .back:hover{ color:var(--red-bright); border-color:rgba(231,76,60,.6); background:rgba(192,57,43,.15); }
+</style>
+</head>
+<body>
+<a class="back" href="/index.html">← Înapoi</a>
+
+<div class="card">
+
+  <!-- HEADER -->
+  <div class="card-header">
+    <div class="brand">☭ BRATVA</div>
+    <div class="brand-sub">Management System</div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('login', this)">⚡ Login</button>
+    <button class="tab-btn" onclick="switchTab('register', this)">✚ Register</button>
+  </div>
+
+  <!-- BODY -->
+  <div class="card-body">
+
+    <!-- LOGIN -->
+    <div class="tab-panel active" id="panel-login">
+      <div class="field">
+        <label>Username</label>
+        <input id="loginUser" placeholder="Introdu username" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Parolă</label>
+        <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') login()">
+      </div>
+      <div class="msg error" id="loginErr">Date incorecte. Încearcă din nou.</div>
+      <button class="btn-main" onclick="login()">Autentificare →</button>
+    </div>
+
+    <!-- REGISTER -->
+    <div class="tab-panel" id="panel-register">
+      <div class="field">
+        <label>Username</label>
+        <input id="regUser" placeholder="Alege un username" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>CNP</label>
+        <input id="regCnp" placeholder="Introdu CNP" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Parolă</label>
+        <input id="regPass" type="password" placeholder="Minim 6 caractere" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label>Confirmă Parola</label>
+        <input id="regPass2" type="password" placeholder="Repetă parola" autocomplete="new-password" onkeydown="if(event.key==='Enter') register()">
+      </div>
+
+      <div class="msg error"   id="regErr"></div>
+      <div class="msg success" id="regOk">Cont creat cu succes! Te poți autentifica.</div>
+      <button class="btn-main" onclick="register()">Creează Cont →</button>
+    </div>
+
+  </div>
+
+  <div class="card-footer">Bratva Panel &nbsp;·&nbsp; FiveM</div>
+</div>
+
+<script>
+/* ── TAB SWITCH ── */
+function switchTab(name, btn){
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+  // reset messages
+  document.querySelectorAll('.msg').forEach(m => m.classList.remove('show'));
+}
+
+/* ── LOGIN ── */
+async function login(){
+  const username = document.getElementById('loginUser').value.trim();
+  const password = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginErr');
+  err.classList.remove('show');
+
+  if(!username || !password){ err.textContent = '⚠ Completați toate câmpurile.'; err.classList.add('show'); return; }
+
+  const res = await fetch('/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password, org: 'bratva' })
+  });
+
+  if(res.ok){
+    location.href = 'dashboard.html';
+  } else {
+    const text = await res.text();
+    err.textContent = '⚠ ' + (text || 'Date incorecte.');
+    err.classList.add('show');
+  }
+}
+
+/* ── REGISTER ── */
+async function register(){
+  const username = document.getElementById('regUser').value.trim();
+  const cnp      = document.getElementById('regCnp').value.trim();
+  const password = document.getElementById('regPass').value;
+  const password2 = document.getElementById('regPass2').value;
+  const role = "member";
+  const err = document.getElementById('regErr');
+  const ok  = document.getElementById('regOk');
+
+  err.classList.remove('show');
+  ok.classList.remove('show');
+
+  if(!username){
+    err.textContent = '⚠ Introduceți un username.'; err.classList.add('show'); return;
+  }
+  if(!cnp){
+    err.textContent = '⚠ Introduceți CNP-ul.'; err.classList.add('show'); return;
+  }
+  if(password.length < 6){
+    err.textContent = '⚠ Parola trebuie să aibă minim 6 caractere.'; err.classList.add('show'); return;
+  }
+  if(password !== password2){
+    err.textContent = '⚠ Parolele nu coincid.'; err.classList.add('show'); return;
+  }
+
+  const res = await fetch('/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, cnp, password, role, org: 'bratva' })
+  });
+
+  if(res.ok){
+    ok.classList.add('show');
+    document.getElementById('regUser').value  = '';
+    document.getElementById('regCnp').value   = '';
+    document.getElementById('regPass').value  = '';
+    document.getElementById('regPass2').value = '';
+  } else {
+    const text = await res.text();
+    err.textContent = '⚠ ' + (text || 'Eroare la creare cont.');
+    err.classList.add('show');
+  }
+}
+</script>
+</body>
+</html>

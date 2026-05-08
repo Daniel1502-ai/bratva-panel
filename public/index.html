@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<title>Selectează Facțiunea</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden;font-family:'Rajdhani',sans-serif;background:#000;color:#fff}
+  .split{position:relative;width:100vw;height:100vh;overflow:hidden}
+
+  .side{
+    position:absolute;top:0;bottom:0;width:100%;
+    display:flex;align-items:center;
+    cursor:pointer;
+    transition:filter .45s ease;
+    background-size:cover;background-position:center;
+    text-decoration:none;color:#fff;
+  }
+  .left{
+    background-image:linear-gradient(rgba(0,0,0,.35),rgba(0,0,0,.55)),url("https://i.imgur.com/gE4Jskd.jpeg");
+    clip-path:polygon(0 0,55% 0,45% 100%,0 100%);
+    filter:brightness(.6);
+    justify-content:center;padding-right:40%;
+  }
+  .right{
+    background-image:linear-gradient(rgba(0,0,0,.35),rgba(0,0,0,.55)),url("https://i.imgur.com/7YqgLz2.jpeg");
+    clip-path:polygon(55% 0,100% 0,100% 100%,45% 100%);
+    filter:brightness(.6);
+    justify-content:center;padding-left:40%;
+  }
+  .side:hover{filter:brightness(.95);z-index:3;}
+  .content{text-align:center;transition:transform .4s ease,opacity .4s ease;transform:translateY(8px);opacity:.8;}
+  .side:hover .content{transform:translateY(0);opacity:1;}
+  .side h1{font-family:'Bebas Neue',sans-serif;font-size:6vw;letter-spacing:12px;line-height:1;}
+  .side p{margin-top:20px;font-size:13px;letter-spacing:5px;text-transform:uppercase;opacity:.75;text-shadow:0 2px 12px rgba(0,0,0,.8);}
+  .left h1{color:#e74c3c;text-shadow:0 0 40px rgba(200,30,20,.7);}
+  .right h1{color:#4aa3ff;text-shadow:0 0 40px rgba(50,130,255,.7);}
+  .left:hover h1{text-shadow:0 0 60px rgba(231,76,60,.9);}
+  .right:hover h1{text-shadow:0 0 60px rgba(74,163,255,.9);}
+
+  .divider{
+    position:absolute;top:0;bottom:0;left:50%;
+    width:3px;transform:translateX(-50%) skewX(-12.5deg);
+    background:linear-gradient(180deg,transparent 0%,rgba(255,255,255,.5) 30%,rgba(255,255,255,.5) 70%,transparent 100%);
+    pointer-events:none;z-index:5;
+    box-shadow:0 0 20px rgba(255,255,255,.2);
+  }
+  .brand{
+    position:absolute;top:22px;left:50%;transform:translateX(-50%);
+    z-index:10;font-family:'Bebas Neue',sans-serif;
+    letter-spacing:8px;font-size:16px;color:rgba(255,255,255,.7);
+    text-shadow:0 2px 12px rgba(0,0,0,.9);pointer-events:none;white-space:nowrap;
+  }
+  .back-btn{
+    position:absolute;top:22px;z-index:10;
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;
+    letter-spacing:2px;text-transform:uppercase;text-decoration:none;
+    color:rgba(255,255,255,.65);background:rgba(0,0,0,.45);
+    border:1px solid rgba(255,255,255,.2);padding:7px 16px;border-radius:3px;
+    backdrop-filter:blur(6px);transition:color .2s,border-color .2s,background .2s;
+  }
+  .back-left{left:22px;}
+  .back-left:hover{color:#e74c3c;border-color:rgba(231,76,60,.6);background:rgba(192,57,43,.15);}
+  .back-right{right:22px;}
+  .back-right:hover{color:#4aa3ff;border-color:rgba(74,163,255,.6);background:rgba(36,119,201,.15);}
+
+  @media(max-width:700px){
+    .side h1{font-size:12vw;letter-spacing:6px;}
+    .side p{font-size:11px;letter-spacing:3px;}
+    .left{padding-right:5%;}.right{padding-left:5%;}
+  }
+</style>
+</head>
+<body>
+<div class="split">
+  <div class="brand">SELECTEAZĂ FACȚIUNEA</div>
+  <a class="side left" href="/bratva-login.html">
+    <div class="content">
+      <h1>☭ BRATVA</h1>
+      <p>Frăția Roșie</p>
+    </div>
+  </a>
+
+  <a class="side right" href="/service-login.html">
+    <div class="content">
+      <h1>⚙ SERVICE</h1>
+      <p>Mecanici &amp; Suport</p>
+    </div>
+  </a>
+
+  <div class="divider"></div>
+</div>
+</body>
+</html>

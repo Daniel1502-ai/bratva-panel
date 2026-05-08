@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<title>Bratva Panel — Învoiri</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red:#c0392b; --red-bright:#e74c3c; --red-glow:rgba(192,57,43,0.5);
+    --dark:#0a0a0a; --dark2:#111; --dark3:#1a1a1a; --dark4:#222;
+    --border:#2a2a2a; --border2:#333; --text:#e8e8e8; --muted:#666;
+    --green:#27ae60; --green-bright:#2ecc71; --green-dim:rgba(39,174,96,0.15);
+    --yellow:#f39c12;
+    --sb-collapsed:64px; --sb-expanded:220px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Rajdhani',sans-serif;background:var(--dark);color:var(--text);min-height:100vh;display:flex;
+    background-image:repeating-linear-gradient(0deg,transparent,transparent 80px,rgba(255,255,255,0.012) 80px,rgba(255,255,255,0.012) 81px),
+      repeating-linear-gradient(90deg,transparent,transparent 80px,rgba(255,255,255,0.012) 80px,rgba(255,255,255,0.012) 81px);}
+
+  /* SIDEBAR (cloned) */
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sb-collapsed);background:var(--dark2);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:200;transition:width .28s cubic-bezier(.4,0,.2,1);overflow:hidden;}
+  .sidebar::after{content:'';position:absolute;top:0;right:-1px;bottom:0;width:1px;background:linear-gradient(180deg,transparent,var(--red),transparent);opacity:0;transition:opacity .28s;}
+  .sidebar:hover{width:var(--sb-expanded);} .sidebar:hover::after{opacity:1;}
+  .sb-brand{height:64px;display:flex;align-items:center;padding:0 18px;gap:14px;border-bottom:1px solid var(--border);flex-shrink:0;overflow:hidden;white-space:nowrap;}
+  .sb-brand-icon{font-size:22px;color:var(--red-bright);text-shadow:0 0 20px var(--red-glow);width:28px;text-align:center;}
+  .sb-brand-text{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:4px;color:var(--red-bright);text-shadow:0 0 20px var(--red-glow);opacity:0;transition:opacity .2s .05s;}
+  .sidebar:hover .sb-brand-text{opacity:1;}
+  .sb-nav{display:flex;flex-direction:column;padding:16px 0;flex:1;overflow:hidden;}
+  .sb-link{display:flex;align-items:center;gap:14px;padding:0 18px;height:44px;color:var(--muted);text-decoration:none;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;white-space:nowrap;border-left:2px solid transparent;transition:color .15s,background .15s;}
+  .sb-link:hover{color:var(--text);background:rgba(255,255,255,0.04);}
+  .sb-link.active{color:var(--red-bright);background:rgba(192,57,43,0.1);border-left-color:var(--red);}
+  .sb-icon{font-size:18px;width:28px;text-align:center;flex-shrink:0;}
+  .sb-label{opacity:0;transition:opacity .18s .06s;}
+  .sidebar:hover .sb-label{opacity:1;}
+  .sb-bottom{border-top:1px solid var(--border);padding:14px 0;display:flex;flex-direction:column;gap:8px;flex-shrink:0;overflow:hidden;}
+  .sb-user{display:flex;align-items:center;gap:14px;padding:6px 18px;white-space:nowrap;overflow:hidden;}
+  .sb-user-icon{font-size:16px;width:28px;text-align:center;color:var(--muted);}
+  .sb-user-info{display:flex;flex-direction:column;gap:1px;opacity:0;transition:opacity .18s .06s;min-width:0;}
+  .sidebar:hover .sb-user-info{opacity:1;}
+  .sb-user-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);}
+  .sb-username{font-weight:700;font-size:14px;color:var(--text);}
+  .sb-logout{display:flex;align-items:center;gap:14px;padding:0 18px;height:40px;background:transparent;color:var(--red-bright);border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;width:100%;text-align:left;transition:background .15s,color .15s;}
+  .sb-logout:hover{background:rgba(192,57,43,0.15);color:white;}
+  .sb-logout-icon{font-size:16px;width:28px;text-align:center;}
+  .sb-logout-label{opacity:0;transition:opacity .18s .06s;}
+  .sidebar:hover .sb-logout-label{opacity:1;}
+
+  .main-content{margin-left:var(--sb-collapsed);flex:1;min-width:0;}
+
+  .page-header{padding:40px 36px 28px;display:flex;align-items:flex-end;justify-content:space-between;}
+  .page-label{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--red-bright);}
+  .page-title{font-family:'Bebas Neue',sans-serif;font-size:46px;letter-spacing:6px;line-height:1;}
+  .page-sub{font-size:13px;color:var(--muted);letter-spacing:.5px;margin-top:4px;}
+
+  .layout{display:grid;grid-template-columns:380px 1fr;gap:24px;padding:0 36px 48px;}
+  @media(max-width:1100px){.layout{grid-template-columns:1fr;}}
+
+  .panel{background:var(--dark2);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+  .panel-head{padding:16px 22px;background:var(--dark3);border-bottom:1px solid var(--border2);font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:var(--text);}
+  .panel-body{padding:22px;}
+
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+  .field label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:700;}
+  .field input,.field textarea{font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:500;background:var(--dark3);color:var(--text);border:1px solid var(--border2);border-radius:3px;padding:10px 12px;outline:none;transition:border-color .15s;width:100%;}
+  .field input:focus,.field textarea:focus{border-color:var(--red);}
+  .field textarea{resize:vertical;min-height:84px;}
+  .helper{font-size:12px;color:var(--muted);margin-top:-8px;margin-bottom:14px;}
+  .helper b{color:var(--red-bright);}
+  .btn-main{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:2px;text-transform:uppercase;background:var(--red);color:white;border:none;padding:12px 22px;border-radius:3px;cursor:pointer;width:100%;transition:all .2s ease;}
+  .btn-main:hover{background:var(--red-bright);box-shadow:0 0 20px var(--red-glow);}
+  .msg{font-size:12px;letter-spacing:1px;padding:10px 14px;border-radius:3px;font-weight:600;display:none;margin-bottom:12px;}
+  .msg.show{display:block;}
+  .msg.error{background:rgba(192,57,43,0.15);border:1px solid var(--red);color:var(--red-bright);}
+  .msg.success{background:var(--green-dim);border:1px solid var(--green);color:var(--green-bright);}
+
+  table{width:100%;border-collapse:collapse;}
+  thead tr{background:var(--dark3);border-bottom:1px solid var(--border2);}
+  th{font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:13px 16px;text-align:left;}
+  tbody tr{border-bottom:1px solid var(--border);transition:background .15s;}
+  tbody tr:last-child{border-bottom:none;}
+  tbody tr:hover{background:rgba(255,255,255,0.02);}
+  td{padding:12px 16px;font-size:14px;vertical-align:middle;}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:3px 9px;border-radius:2px;border:1px solid;}
+  .pill.active{background:var(--green-dim);border-color:var(--green);color:var(--green-bright);}
+  .pill.expired{background:rgba(120,120,120,0.1);border-color:#444;color:var(--muted);}
+  .pill.upcoming{background:rgba(243,156,18,0.12);border-color:var(--yellow);color:var(--yellow);}
+  .name-cell{font-weight:700;letter-spacing:.5px;}
+  .motiv-cell{color:var(--muted);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .btn-del{background:transparent;color:var(--muted);border:1px solid var(--border2);padding:6px 10px;border-radius:3px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;transition:all .15s;}
+  .btn-del:hover{color:var(--red-bright);border-color:var(--red);background:rgba(192,57,43,0.08);}
+  .empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
+  .empty-icon{font-size:32px;margin-bottom:10px;}
+
+  .toast{position:fixed;bottom:28px;right:28px;background:var(--dark3);border:1px solid var(--red);color:white;font-weight:600;font-size:14px;letter-spacing:1px;padding:14px 24px;border-radius:4px;box-shadow:0 8px 32px rgba(0,0,0,0.5),0 0 20px var(--red-glow);transform:translateY(80px);opacity:0;transition:all .3s ease;z-index:999;}
+  .toast.show{transform:translateY(0);opacity:1;}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sb-brand"><span class="sb-brand-icon">☭</span><span class="sb-brand-text">BRATVA</span></div>
+  <nav class="sb-nav">
+    <a href="dashboard.html"  class="sb-link"><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
+    <a href="bratva.html"     class="sb-link"><span class="sb-icon">🔱</span><span class="sb-label">Bratva</span></a>
+    <a href="sputnik.html"    class="sb-link"><span class="sb-icon">⚡</span><span class="sb-label">Sputnik</span></a>
+    <a href="task.html"       class="sb-link"><span class="sb-icon">📋</span><span class="sb-label">Task</span></a>
+    <a href="calculator.html" class="sb-link"><span class="sb-icon">💰</span><span class="sb-label">Calculator</span></a>
+    <a href="invoiri.html"    class="sb-link active"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
+    <a href="admin.html"      class="sb-link" id="adminLink" style="display:none"><span class="sb-icon">🛡</span><span class="sb-label">Admin</span></a>
+  </nav>
+  <div class="sb-bottom">
+    <div class="sb-user"><span class="sb-user-icon">👤</span><div class="sb-user-info"><span class="sb-user-label">Conectat ca</span><span class="sb-username" id="navUsername">—</span></div></div>
+    <button class="sb-logout" onclick="logout()"><span class="sb-logout-icon">⏻</span><span class="sb-logout-label">Logout</span></button>
+  </div>
+</aside>
+
+<div class="main-content">
+  <div class="page-header">
+    <div>
+      <div class="page-label">Organizație</div>
+      <div class="page-title">📅 Învoiri</div>
+      <div class="page-sub">Postează o învoire — statusul se actualizează automat în Bratva și Sputnik.</div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="panel">
+      <div class="panel-head">Postează învoire</div>
+      <div class="panel-body">
+        <div class="msg error" id="formErr"></div>
+        <div class="msg success" id="formOk">✓ Învoire postată</div>
+        <div class="field"><label>Data început</label><input type="date" id="fStart"></div>
+        <div class="field"><label>Durată (zile)</label><input type="number" id="fDays" min="1" max="60" value="1"></div>
+        <div class="helper">Sfârșit estimat: <b id="fEnd">—</b></div>
+        <div class="field"><label>Motiv</label><textarea id="fReason" placeholder="Motivul învoirii..."></textarea></div>
+        <button class="btn-main" onclick="submitInvoire()">📅 Postează învoire</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">Învoiri postate</div>
+      <table>
+        <thead><tr><th>Membru</th><th>Perioadă</th><th>Zile</th><th>Status</th><th>Motiv</th><th></th></tr></thead>
+        <tbody id="listBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">✓</div>
+
+<script>
+let user;
+function fmt(d){ return d; }
+function addDays(s,n){ const d=new Date(s+"T00:00:00"); d.setDate(d.getDate()+parseInt(n,10)); return d.toISOString().substring(0,10); }
+function todayStr(){ return new Date().toISOString().substring(0,10); }
+function recalcEnd(){
+  const s=document.getElementById("fStart").value;
+  const n=parseInt(document.getElementById("fDays").value,10);
+  document.getElementById("fEnd").textContent = (s && n>0) ? addDays(s,n-1) : "—";
+}
+
+async function init(){
+  const r=await fetch("/me"); user=await r.json();
+  if(!user){ location.href="bratva-login.html"; return; }
+  document.getElementById("navUsername").textContent=user.username;
+  if(user.role && user.role.toLowerCase()==="leader") document.getElementById("adminLink").style.display="";
+  document.getElementById("fStart").value = todayStr();
+  document.getElementById("fStart").addEventListener("input",recalcEnd);
+  document.getElementById("fDays").addEventListener("input",recalcEnd);
+  recalcEnd();
+  load();
+}
+
+async function load(){
+  const r=await fetch("/invoiri"); const list=await r.json();
+  const tbody=document.getElementById("listBody");
+  if(!list.length){
+    tbody.innerHTML=`<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📅</div><p>Nicio învoire postată.</p></div></td></tr>`;
+    return;
+  }
+  const today=todayStr();
+  const isLeader = user.role.toLowerCase()==="leader";
+  tbody.innerHTML=list.map(it=>{
+    let status,cls;
+    if(it.startDate>today){ status="Programată"; cls="upcoming"; }
+    else if(it.endDate>=today){ status="Activă"; cls="active"; }
+    else { status="Expirată"; cls="expired"; }
+    const canDel = isLeader || it.userId===user.id;
+    return `<tr>
+      <td class="name-cell">${it.nume||it.username}</td>
+      <td>${it.startDate} → ${it.endDate}</td>
+      <td>${it.durataZile}</td>
+      <td><span class="pill ${cls}">${status}</span></td>
+      <td class="motiv-cell" title="${(it.motiv||'').replace(/"/g,'&quot;')}">${it.motiv||'—'}</td>
+      <td>${canDel?`<button class="btn-del" onclick="del(${it.id})">🗑</button>`:''}</td>
+    </tr>`;
+  }).join("");
+}
+
+async function submitInvoire(){
+  const startDate=document.getElementById("fStart").value;
+  const durataZile=parseInt(document.getElementById("fDays").value,10);
+  const motiv=document.getElementById("fReason").value.trim();
+  const err=document.getElementById("formErr"); const ok=document.getElementById("formOk");
+  err.classList.remove("show"); ok.classList.remove("show");
+  if(!startDate){ err.textContent="⚠ Selectează data."; err.classList.add("show"); return; }
+  if(!durataZile||durataZile<1){ err.textContent="⚠ Durată invalidă."; err.classList.add("show"); return; }
+  const res=await fetch("/invoiri",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({startDate,durataZile,motiv})});
+  if(!res.ok){ err.textContent="⚠ "+(await res.text()); err.classList.add("show"); return; }
+  ok.classList.add("show");
+  document.getElementById("fReason").value="";
+  showToast("✓ Învoire postată");
+  load();
+}
+
+async function del(id){
+  if(!confirm("Ștergi această învoire?")) return;
+  const r=await fetch("/invoiri/"+id,{method:"DELETE"});
+  if(!r.ok){ showToast("⚠ Eroare"); return; }
+  load();
+}
+
+function showToast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),2500);
+}
+
+async function logout(){ await fetch("/logout",{method:"POST"}).catch(()=>{}); location.href="bratva-login.html"; }
+</script>
+<script src="notifications.js"></script>
+</body>
+</html>
