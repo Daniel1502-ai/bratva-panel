@@ -375,5 +375,15 @@ app.delete("/invoiri/:id", requireAuth, (req, res) => {
     res.send("OK");
 });
 
+// ---------- SETUP ADMIN (TEMPORAR - sterge dupa folosire) ----------
+app.get("/setup-admin-x9k2", async (req, res) => {
+    const existing = db.prepare("SELECT id FROM users WHERE username='admin'").get();
+    if (existing) return res.send("Admin deja există!");
+    const hash = await bcrypt.hash("Parola123", 10);
+    db.prepare("INSERT INTO users (username,password,role,cnp,org) VALUES (?,?,?,?,?)")
+      .run("admin", hash, "leader", "1127", "bratva");
+    res.send("✓ Admin creat cu succes!");
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => { console.log(`Server running on port ${PORT}`); });
