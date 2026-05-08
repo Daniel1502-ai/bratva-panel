@@ -5,7 +5,7 @@ const Database = require("better-sqlite3");
 const bcrypt = require("bcrypt");
 
 const app = express();
-const db = new Database("./database.db");
+const db = new Database("/app/data/database.db");
 
 // Enable WAL mode for better performance
 db.pragma("journal_mode = WAL");
