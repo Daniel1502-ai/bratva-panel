@@ -76,6 +76,7 @@ db.exec(`CREATE TABLE IF NOT EXISTS service (
 )`);
 try { db.exec(`ALTER TABLE service ADD COLUMN cnp TEXT`); } catch {}
 try { db.exec(`ALTER TABLE invoiri ADD COLUMN org TEXT DEFAULT 'bratva'`); } catch {}
+try { db.exec(`ALTER TABLE invoiri ADD COLUMN ora TEXT DEFAULT NULL`); } catch {}
 
 // ---------- AUTO-EXPIRY ----------
 function checkExpiredTasks() {
@@ -332,7 +333,7 @@ app.get("/invoiri", requireAuth, (req, res) => {
 });
 
 app.post("/invoiri", requireAuth, async (req, res) => {
-    const { startDate, durataZile, motiv } = req.body;
+    const { startDate, ora, durataZile, motiv } = req.body;
     if (!startDate || !durataZile) return res.status(400).send("Data și durata sunt obligatorii");
     const dz = parseInt(durataZile, 10);
     if (isNaN(dz) || dz < 1 || dz > 365) return res.status(400).send("Durată invalidă");
@@ -352,8 +353,8 @@ app.post("/invoiri", requireAuth, async (req, res) => {
     const nume = member ? member.nume : u.username;
 
     const result = db.prepare(
-        `INSERT INTO invoiri (userId,username,cnp,nume,startDate,durataZile,endDate,motiv,org) VALUES (?,?,?,?,?,?,?,?,?)`
-    ).run(u.id, u.username, u.cnp || '', nume, startDate, dz, endDate, (motiv || '').trim(), userOrg);
+        `INSERT INTO invoiri (userId,username,cnp,nume,startDate,ora,durataZile,endDate,motiv,org) VALUES (?,?,?,?,?,?,?,?,?,?)`
+    ).run(u.id, u.username, u.cnp || '', nume, startDate, ora || null, dz, endDate, (motiv || '').trim(), userOrg);
 
     const leaders = db.prepare(
         `SELECT id FROM users WHERE LOWER(role)='leader' AND (COALESCE(org,'bratva')=? OR username='admin')`
@@ -373,16 +374,6 @@ app.delete("/invoiri/:id", requireAuth, (req, res) => {
     if (row.userId !== u.id && u.role.toLowerCase() !== 'leader') return res.status(403).send("Interzis");
     db.prepare(`DELETE FROM invoiri WHERE id=?`).run(req.params.id);
     res.send("OK");
-});
-
-// ---------- SETUP ADMIN (TEMPORAR - sterge dupa folosire) ----------
-app.get("/setup-admin-x9k2", async (req, res) => {
-    const existing = db.prepare("SELECT id FROM users WHERE username='admin'").get();
-    if (existing) return res.send("Admin deja există!");
-    const hash = await bcrypt.hash("Parola123", 10);
-    db.prepare("INSERT INTO users (username,password,role,cnp,org) VALUES (?,?,?,?,?)")
-      .run("admin", hash, "leader", "0000", "bratva");
-    res.send("✓ Admin creat cu succes!");
 });
 
 const PORT = process.env.PORT || 3000;
