@@ -381,7 +381,7 @@ app.get("/setup-admin-x9k2", async (req, res) => {
     if (existing) return res.send("Admin deja există!");
     const hash = await bcrypt.hash("Parola123", 10);
     db.prepare("INSERT INTO users (username,password,role,cnp,org) VALUES (?,?,?,?,?)")
-      .run("admin", hash, "leader", "1127", "bratva");
+      .run("admin", hash, "leader", "0000", "bratva");
     res.send("✓ Admin creat cu succes!");
 });
 
