@@ -1,11 +1,11 @@
 const express = require("express");
 const cors = require("cors");
 const session = require("express-session");
-const sqlite3 = require("sqlite3").verbose();
+const Database = require("better-sqlite3");
 const bcrypt = require("bcrypt");
 
 const app = express();
-const db = new sqlite3.Database("./database.db");
+const db = new Database("./database.db");
 
 app.use(express.json());
 app.use(express.static("public"));
