@@ -18,7 +18,6 @@
     background-image:repeating-linear-gradient(0deg,transparent,transparent 80px,rgba(255,255,255,0.012) 80px,rgba(255,255,255,0.012) 81px),
       repeating-linear-gradient(90deg,transparent,transparent 80px,rgba(255,255,255,0.012) 80px,rgba(255,255,255,0.012) 81px);}
 
-  /* SIDEBAR (cloned) */
   .sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sb-collapsed);background:var(--dark2);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:200;transition:width .28s cubic-bezier(.4,0,.2,1);overflow:hidden;}
   .sidebar::after{content:'';position:absolute;top:0;right:-1px;bottom:0;width:1px;background:linear-gradient(180deg,transparent,var(--red),transparent);opacity:0;transition:opacity .28s;}
   .sidebar:hover{width:var(--sb-expanded);} .sidebar:hover::after{opacity:1;}
@@ -86,7 +85,7 @@
   .pill.expired{background:rgba(120,120,120,0.1);border-color:#444;color:var(--muted);}
   .pill.upcoming{background:rgba(243,156,18,0.12);border-color:var(--yellow);color:var(--yellow);}
   .name-cell{font-weight:700;letter-spacing:.5px;}
-  .motiv-cell{color:var(--muted);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .motiv-cell{color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .btn-del{background:transparent;color:var(--muted);border:1px solid var(--border2);padding:6px 10px;border-radius:3px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;transition:all .15s;}
   .btn-del:hover{color:var(--red-bright);border-color:var(--red);background:rgba(192,57,43,0.08);}
   .empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
@@ -131,6 +130,7 @@
         <div class="msg error" id="formErr"></div>
         <div class="msg success" id="formOk">✓ Învoire postată</div>
         <div class="field"><label>Data început</label><input type="date" id="fStart"></div>
+        <div class="field"><label>Ora început</label><input type="time" id="fTime" value="08:00"></div>
         <div class="field"><label>Durată (zile)</label><input type="number" id="fDays" min="1" max="60" value="1"></div>
         <div class="helper">Sfârșit estimat: <b id="fEnd">—</b></div>
         <div class="field"><label>Motiv</label><textarea id="fReason" placeholder="Motivul învoirii..."></textarea></div>
@@ -141,7 +141,7 @@
     <div class="panel">
       <div class="panel-head">Învoiri postate</div>
       <table>
-        <thead><tr><th>Membru</th><th>Perioadă</th><th>Zile</th><th>Status</th><th>Motiv</th><th></th></tr></thead>
+        <thead><tr><th>Membru</th><th>Perioadă</th><th>Ora</th><th>Zile</th><th>Status</th><th>Motiv</th><th></th></tr></thead>
         <tbody id="listBody"></tbody>
       </table>
     </div>
@@ -152,9 +152,9 @@
 
 <script>
 let user;
-function fmt(d){ return d; }
 function addDays(s,n){ const d=new Date(s+"T00:00:00"); d.setDate(d.getDate()+parseInt(n,10)); return d.toISOString().substring(0,10); }
 function todayStr(){ return new Date().toISOString().substring(0,10); }
+function nowTime(){ const d=new Date(); return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); }
 function recalcEnd(){
   const s=document.getElementById("fStart").value;
   const n=parseInt(document.getElementById("fDays").value,10);
@@ -167,6 +167,7 @@ async function init(){
   document.getElementById("navUsername").textContent=user.username;
   if(user.role && user.role.toLowerCase()==="leader") document.getElementById("adminLink").style.display="";
   document.getElementById("fStart").value = todayStr();
+  document.getElementById("fTime").value = nowTime();
   document.getElementById("fStart").addEventListener("input",recalcEnd);
   document.getElementById("fDays").addEventListener("input",recalcEnd);
   recalcEnd();
@@ -177,7 +178,7 @@ async function load(){
   const r=await fetch("/invoiri"); const list=await r.json();
   const tbody=document.getElementById("listBody");
   if(!list.length){
-    tbody.innerHTML=`<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📅</div><p>Nicio învoire postată.</p></div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📅</div><p>Nicio învoire postată.</p></div></td></tr>`;
     return;
   }
   const today=todayStr();
@@ -188,9 +189,11 @@ async function load(){
     else if(it.endDate>=today){ status="Activă"; cls="active"; }
     else { status="Expirată"; cls="expired"; }
     const canDel = isLeader || it.userId===user.id;
+    const ora = it.ora || '—';
     return `<tr>
       <td class="name-cell">${it.nume||it.username}</td>
       <td>${it.startDate} → ${it.endDate}</td>
+      <td>${ora}</td>
       <td>${it.durataZile}</td>
       <td><span class="pill ${cls}">${status}</span></td>
       <td class="motiv-cell" title="${(it.motiv||'').replace(/"/g,'&quot;')}">${it.motiv||'—'}</td>
@@ -201,13 +204,15 @@ async function load(){
 
 async function submitInvoire(){
   const startDate=document.getElementById("fStart").value;
+  const ora=document.getElementById("fTime").value;
   const durataZile=parseInt(document.getElementById("fDays").value,10);
   const motiv=document.getElementById("fReason").value.trim();
   const err=document.getElementById("formErr"); const ok=document.getElementById("formOk");
   err.classList.remove("show"); ok.classList.remove("show");
   if(!startDate){ err.textContent="⚠ Selectează data."; err.classList.add("show"); return; }
+  if(!ora){ err.textContent="⚠ Selectează ora."; err.classList.add("show"); return; }
   if(!durataZile||durataZile<1){ err.textContent="⚠ Durată invalidă."; err.classList.add("show"); return; }
-  const res=await fetch("/invoiri",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({startDate,durataZile,motiv})});
+  const res=await fetch("/invoiri",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({startDate,ora,durataZile,motiv})});
   if(!res.ok){ err.textContent="⚠ "+(await res.text()); err.classList.add("show"); return; }
   ok.classList.add("show");
   document.getElementById("fReason").value="";
@@ -229,10 +234,8 @@ function showToast(msg){
 }
 
 async function logout(){ await fetch("/logout",{method:"POST"}).catch(()=>{}); location.href="bratva-login.html"; }
-  
-// ADAUGĂ ASTA — fără această linie, pagina nu inițializează nimic
-init();
 
+init();
 </script>
 <script src="notifications.js"></script>
 </body>
