@@ -229,6 +229,10 @@ function showToast(msg){
 }
 
 async function logout(){ await fetch("/logout",{method:"POST"}).catch(()=>{}); location.href="bratva-login.html"; }
+  
+// ADAUGĂ ASTA — fără această linie, pagina nu inițializează nimic
+init();
+
 </script>
 <script src="notifications.js"></script>
 </body>
