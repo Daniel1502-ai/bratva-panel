@@ -39,6 +39,11 @@ db.exec(`CREATE TABLE IF NOT EXISTS sputnik (
     nume TEXT, cnp TEXT, telefon TEXT, grad TEXT,
     task TEXT, taskAvansari TEXT, invoire TEXT, prezenta TEXT
 )`);
+db.exec(`CREATE TABLE IF NOT EXISTS sputnik2 (
+    id INTEGER PRIMARY KEY,
+    nume TEXT, cnp TEXT, telefon TEXT, grad TEXT,
+    task TEXT, taskAvansari TEXT, invoire TEXT, prezenta TEXT
+)`);
 db.exec(`CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL, description TEXT,
@@ -152,7 +157,8 @@ app.post("/register", async (req, res) => {
         member = db.prepare(`SELECT nume FROM service WHERE cnp=? LIMIT 1`).get(cnp.trim());
     } else {
         member = db.prepare(`SELECT nume FROM bratva WHERE cnp=?`).get(cnp.trim())
-               || db.prepare(`SELECT nume FROM sputnik WHERE cnp=?`).get(cnp.trim());
+               || db.prepare(`SELECT nume FROM sputnik WHERE cnp=?`).get(cnp.trim())
+               || db.prepare(`SELECT nume FROM sputnik2 WHERE cnp=?`).get(cnp.trim());
     }
     if (!member) return res.status(403).send("CNP-ul nu este înregistrat în organizație");
 
@@ -202,6 +208,23 @@ app.post("/sputnik", requireRole("leader"), (req, res) => {
     res.send("Saved");
 });
 
+// ---------- SPUTNIK 2 ----------
+app.get("/sputnik2", requireAuth, (req, res) => {
+    const rows = db.prepare("SELECT * FROM sputnik2").all();
+    const today = new Date().toISOString().substring(0, 10);
+    const active = db.prepare(`SELECT cnp FROM invoiri WHERE startDate<=? AND endDate>=?`).all(today, today);
+    const set = new Set(active.map(r => (r.cnp || '').trim()).filter(Boolean));
+    rows.forEach(r => { r.invoire = (r.cnp && set.has(r.cnp.trim())) ? "Da" : "Nu"; });
+    res.json(rows);
+});
+
+app.post("/sputnik2", requireRole("leader"), (req, res) => {
+    db.prepare("DELETE FROM sputnik2").run();
+    const stmt = db.prepare(`INSERT INTO sputnik2 (nume,cnp,telefon,grad,task,taskAvansari,invoire,prezenta) VALUES (?,?,?,?,?,?,?,?)`);
+    for (const d of req.body) stmt.run(d.nume, d.cnp, d.telefon, d.grad, d.task, d.taskAvansari, d.invoire, d.prezenta);
+    res.send("Saved");
+});
+
 // ---------- SERVICE ----------
 app.get("/service", requireAuth, (req, res) => {
     const rows = db.prepare("SELECT * FROM service").all();
@@ -227,7 +250,7 @@ app.get("/tasks", requireAuth, (req, res) => {
 app.get("/my-member-name", requireAuth, (req, res) => {
     const cnp = req.session.user.cnp;
     if (!cnp) return res.json({ names: [] });
-    const rows = db.prepare(`SELECT nume FROM bratva WHERE cnp=? UNION SELECT nume FROM sputnik WHERE cnp=?`).all(cnp, cnp);
+    const rows = db.prepare(`SELECT nume FROM bratva WHERE cnp=? UNION SELECT nume FROM sputnik WHERE cnp=? UNION SELECT nume FROM sputnik2 WHERE cnp=?`).all(cnp, cnp, cnp);
     res.json({ names: rows.map(r => r.nume).filter(Boolean) });
 });
 
@@ -236,6 +259,8 @@ app.get("/members", requireAuth, (req, res) => {
         `SELECT nume,'Bratva' as faction FROM bratva WHERE nume IS NOT NULL AND nume!=''
          UNION ALL
          SELECT nume,'Sputnik' as faction FROM sputnik WHERE nume IS NOT NULL AND nume!=''
+         UNION ALL
+         SELECT nume,'Sputnik' as faction FROM sputnik2 WHERE nume IS NOT NULL AND nume!=''
          ORDER BY faction,nume`
     ).all();
     res.json(rows);
@@ -348,7 +373,8 @@ app.post("/invoiri", requireAuth, async (req, res) => {
         member = db.prepare(`SELECT nume FROM service WHERE cnp=? LIMIT 1`).get(u.cnp || '');
     } else {
         member = db.prepare(`SELECT nume FROM bratva WHERE cnp=?`).get(u.cnp || '')
-               || db.prepare(`SELECT nume FROM sputnik WHERE cnp=?`).get(u.cnp || '');
+               || db.prepare(`SELECT nume FROM sputnik WHERE cnp=?`).get(u.cnp || '')
+               || db.prepare(`SELECT nume FROM sputnik2 WHERE cnp=?`).get(u.cnp || '');
     }
     const nume = member ? member.nume : u.username;
 
