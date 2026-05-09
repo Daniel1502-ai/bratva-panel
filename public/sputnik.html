@@ -204,6 +204,33 @@
   }
   .btn-save:hover { background: var(--red-bright); box-shadow: 0 0 20px var(--red-glow); transform: translateY(-1px); }
 
+  /* ── PAGE TABS ── */
+  .page-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 0 36px 24px;
+  }
+  .page-tab {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 9px 20px;
+    border-radius: 3px;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    background: var(--dark3);
+    transition: all 0.15s;
+  }
+  .page-tab:hover { color: var(--text); border-color: #444; }
+  .page-tab.active {
+    background: rgba(192,57,43,0.18);
+    border-color: var(--red);
+    color: var(--red-bright);
+  }
+
   .table-wrap { margin: 0 36px 48px; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; background: var(--dark2); }
   .table-wrap table { width: 100%; border-collapse: collapse; }
   .table-wrap thead tr { background: var(--dark3); border-bottom: 1px solid var(--border2); }
@@ -304,9 +331,15 @@
   <div class="page-header-left">
     <div class="page-label">Organizație</div>
     <div class="page-title">⚡ Sputnik</div>
-    <div class="page-sub">Evidența prezenței, taskurilor și învoirilor membrilor Sputnik.</div>
+    <div class="page-sub">Locurile 1–35 — evidența prezenței, taskurilor și învoirilor membrilor Sputnik.</div>
   </div>
   <button class="btn-save" id="saveBtn" onclick="save()">💾 Salvează</button>
+</div>
+
+<!-- PAGE TABS -->
+<div class="page-tabs">
+  <a class="page-tab active" href="sputnik.html">⚡ Pagina 1 &nbsp;(1–35)</a>
+  <a class="page-tab" href="sputnik2.html">⚡ Pagina 2 &nbsp;(36–70)</a>
 </div>
 
 <div class="table-wrap">
