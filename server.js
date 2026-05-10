@@ -427,6 +427,7 @@ app.get('/admin',           (req, res) => res.sendFile('admin.html',            
 app.get('/service-panel',   (req, res) => res.sendFile('service-dashboard.html',{ root: 'public' }));
 app.get('/service-invoiri', (req, res) => res.sendFile('service-invoiri.html',  { root: 'public' }));
 app.get('/service-admin',   (req, res) => res.sendFile('service-admin.html',    { root: 'public' }));
+app.get('/service-pontaje', (req, res) => res.sendFile('service-pontaje.html',  { root: 'public' }));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => { console.log(`Server running on port ${PORT}`); });

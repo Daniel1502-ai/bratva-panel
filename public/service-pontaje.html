@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<title>Service Panel — Pontaje</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#2477c9; --blue-bright:#4aa3ff; --blue-glow:rgba(36,119,201,.5);
+    --dark:#070a0f; --dark2:#0f141b; --dark3:#161d27; --dark4:#1e2731;
+    --border:#1f2a36; --border2:#2a3949; --text:#e8eef5; --muted:#6a7584;
+    --green:#27ae60; --green-bright:#2ecc71; --green-dim:rgba(39,174,96,.15);
+    --gold:#f1c40f; --silver:#bdc3c7; --bronze:#cd7f32;
+    --sb-collapsed:64px; --sb-expanded:220px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:'Rajdhani',sans-serif;background:var(--dark);color:var(--text);min-height:100vh;
+    background-image:linear-gradient(rgba(7,10,15,.85),rgba(7,10,15,.92)),url("https://i.imgur.com/7YqgLz2.jpeg");
+    background-size:cover;background-position:center;background-attachment:fixed;
+    display:flex;
+  }
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sb-collapsed);background:rgba(15,20,27,.96);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:200;transition:width .28s cubic-bezier(.4,0,.2,1);overflow:hidden;backdrop-filter:blur(8px)}
+  .sidebar:hover{width:var(--sb-expanded)}
+  .sb-brand{height:64px;display:flex;align-items:center;padding:0 18px;gap:14px;border-bottom:1px solid var(--border);overflow:hidden;white-space:nowrap}
+  .sb-brand-icon{font-size:22px;color:var(--blue-bright);text-shadow:0 0 20px var(--blue-glow);width:28px;text-align:center}
+  .sb-brand-text{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:4px;color:var(--blue-bright);text-shadow:0 0 20px var(--blue-glow);opacity:0;transition:opacity .2s .05s}
+  .sidebar:hover .sb-brand-text{opacity:1}
+  .sb-nav{flex:1;display:flex;flex-direction:column;padding:10px 0;gap:2px;overflow:hidden}
+  .sb-link{display:flex;align-items:center;gap:14px;padding:0 18px;height:44px;text-decoration:none;color:var(--muted);font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;white-space:nowrap;transition:.15s;border-left:2px solid transparent}
+  .sb-link:hover{color:var(--text);background:rgba(255,255,255,.04)}
+  .sb-link.active{color:var(--text);background:rgba(36,119,201,.12);border-left-color:var(--blue-bright)}
+  .sb-icon{font-size:18px;width:28px;text-align:center}
+  .sb-label{opacity:0;transition:opacity .18s .06s}
+  .sidebar:hover .sb-label{opacity:1}
+  .sb-bottom{border-top:1px solid var(--border);padding:12px 0;display:flex;flex-direction:column;gap:4px;overflow:hidden}
+  .sb-user{display:flex;align-items:center;gap:14px;padding:6px 18px;white-space:nowrap;overflow:hidden}
+  .sb-user-icon{font-size:16px;width:28px;text-align:center;color:var(--muted)}
+  .sb-user-info{display:flex;flex-direction:column;gap:1px;opacity:0;transition:opacity .18s .06s}
+  .sidebar:hover .sb-user-info{opacity:1}
+  .sb-user-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+  .sb-username{font-weight:700;font-size:14px;color:var(--text);max-width:130px;overflow:hidden;text-overflow:ellipsis}
+  .sb-logout{display:flex;align-items:center;gap:14px;padding:0 18px;height:40px;background:transparent;color:var(--blue-bright);border:none;cursor:pointer;font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;width:100%;text-align:left;font-family:'Rajdhani',sans-serif}
+  .sb-logout:hover{background:rgba(36,119,201,.18);color:#fff}
+  .sb-logout-icon{font-size:16px;width:28px;text-align:center}
+  .sb-logout-label{opacity:0;transition:opacity .18s .06s}
+  .sidebar:hover .sb-logout-label{opacity:1}
+
+  .main-content{margin-left:var(--sb-collapsed);flex:1;min-width:0;transition:margin-left .28s}
+  .hero{padding:60px 36px 20px;display:flex;flex-direction:column;gap:6px;position:relative}
+  .hero-label{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--blue-bright)}
+  .hero-title{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:6px;line-height:1}
+  .hero-sub{font-size:14px;letter-spacing:1px;color:var(--muted);margin-top:4px}
+
+  .notif-wrap{position:absolute;top:24px;right:36px;}
+  .notif-btn{position:relative;background:rgba(15,20,27,.85);border:1px solid var(--border2);color:var(--text);width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;transition:.2s;backdrop-filter:blur(6px)}
+  .notif-btn:hover{border-color:var(--blue);box-shadow:0 0 16px var(--blue-glow);color:var(--blue-bright)}
+  .notif-badge{position:absolute;top:-4px;right:-4px;background:#e74c3c;color:#fff;font-size:11px;font-weight:700;min-width:20px;height:20px;border-radius:10px;display:none;align-items:center;justify-content:center;padding:0 5px;box-shadow:0 0 8px rgba(231,76,60,.6)}
+  .notif-badge.show{display:flex}
+  .notif-panel{position:absolute;top:54px;right:0;width:360px;max-height:480px;background:rgba(15,20,27,.98);border:1px solid var(--border2);border-radius:6px;box-shadow:0 16px 48px rgba(0,0,0,.6);overflow:hidden;display:none;z-index:300;backdrop-filter:blur(10px)}
+  .notif-panel.show{display:flex;flex-direction:column}
+  .notif-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--dark3)}
+  .notif-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:3px;color:var(--blue-bright)}
+  .notif-mark{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;transition:.15s}
+  .notif-mark:hover{color:var(--blue-bright)}
+  .notif-list{overflow-y:auto;max-height:420px}
+  .notif-list::-webkit-scrollbar{width:6px}
+  .notif-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+  .notif-item{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:4px;cursor:pointer;transition:.15s}
+  .notif-item:hover{background:rgba(255,255,255,.025)}
+  .notif-item.unread{background:rgba(36,119,201,.08);border-left:2px solid var(--blue-bright)}
+  .notif-msg{font-size:13px;font-weight:500;color:var(--text);line-height:1.4}
+  .notif-time{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+  .notif-empty{padding:36px 18px;text-align:center;color:var(--muted);font-size:13px}
+
+  .page-actions{display:flex;justify-content:space-between;align-items:center;padding:0 36px;margin:16px 0 20px}
+  .section-label{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:16px}
+  .section-label::after{content:'';display:inline-block;width:200px;height:1px;background:var(--border);vertical-align:middle;margin-left:4px}
+  .btn-save{font-weight:700;font-size:13px;letter-spacing:2px;text-transform:uppercase;background:var(--blue);color:#fff;border:none;padding:12px 28px;border-radius:3px;cursor:pointer;font-family:'Rajdhani',sans-serif;transition:.2s}
+  .btn-save:hover{background:var(--blue-bright);box-shadow:0 0 20px var(--blue-glow);transform:translateY(-1px)}
+
+  /* ── STATS BAR ── */
+  .stats-bar{display:flex;gap:1px;margin:0 36px 28px;background:var(--border);border-radius:4px;overflow:hidden;border:1px solid var(--border)}
+  .stat{flex:1;background:rgba(15,20,27,.85);padding:16px 22px;display:flex;flex-direction:column;gap:3px}
+  .stat-value{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:var(--blue-bright);line-height:1}
+  .stat-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+
+  /* ── PONTAJE TABLE ── */
+  .table-wrap{margin:0 36px 28px;border:1px solid var(--border);border-radius:4px;overflow:hidden;background:rgba(15,20,27,.85);backdrop-filter:blur(6px)}
+  .table-wrap table{width:100%;border-collapse:collapse}
+  .table-wrap thead tr{background:var(--dark3);border-bottom:1px solid var(--border2)}
+  .table-wrap th{font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:14px 16px;text-align:left}
+  .table-wrap th:first-child{padding-left:20px}
+  .table-wrap tbody tr{border-bottom:1px solid var(--border);transition:background .15s}
+  .table-wrap tbody tr:hover{background:rgba(255,255,255,.025)}
+  .row-num{font-size:11px;color:var(--muted);font-weight:600;padding:10px 8px 10px 20px!important;width:36px}
+  .table-wrap td{padding:8px 16px;vertical-align:middle}
+
+  .cell-text{font-size:14px;font-weight:500;color:var(--text);padding:6px 10px;display:block}
+  .cell-text.muted{color:var(--muted)}
+  .grade-text{font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--blue-bright);padding:6px 10px;display:block}
+
+  .pontaj-input{font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;background:transparent;color:var(--text);border:1px solid transparent;border-radius:3px;padding:6px 10px;width:90px;outline:none;transition:.15s;text-align:center}
+  .pontaj-input:focus{background:var(--dark4);border-color:var(--blue)}
+  .pontaj-input:hover{background:var(--dark3);border-color:var(--border)}
+
+  .money-cell{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px}
+  .money-qual{color:var(--green-bright)}
+  .money-no{color:var(--muted);font-size:13px;font-family:'Rajdhani',sans-serif}
+
+  .rank-badge{display:inline-flex;align-items:center;gap:6px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;padding:4px 10px;border-radius:2px;border:1px solid}
+  .rank-1{background:rgba(241,196,15,.12);border-color:var(--gold);color:var(--gold)}
+  .rank-2{background:rgba(189,195,199,.1);border-color:var(--silver);color:var(--silver)}
+  .rank-3{background:rgba(205,127,50,.12);border-color:var(--bronze);color:var(--bronze)}
+  .rank-4,.rank-5{background:rgba(36,119,201,.08);border-color:var(--blue);color:var(--blue-bright)}
+  .rank-none{color:var(--muted);font-size:12px;letter-spacing:1px;text-transform:uppercase}
+
+  .total-row{background:rgba(36,119,201,.06)!important;border-top:2px solid var(--border2)!important}
+  .total-row td{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1px;color:var(--blue-bright);padding:12px 16px}
+
+  /* ── CLASAMENT ── */
+  .clasament-wrap{margin:0 36px 48px;border:1px solid var(--border);border-radius:4px;overflow:hidden;background:rgba(15,20,27,.85);backdrop-filter:blur(6px)}
+  .clasament-header{background:var(--dark3);padding:16px 20px;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:10px}
+  .clasament-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:4px;color:var(--gold)}
+  .clasament-sub{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+  .clasament-body{padding:16px 20px;display:flex;flex-direction:column;gap:10px}
+  .clasament-row{display:flex;align-items:center;gap:16px;padding:12px 16px;border:1px solid var(--border);border-radius:3px;background:rgba(7,10,15,.4);transition:.15s}
+  .clasament-row:hover{background:rgba(255,255,255,.02)}
+  .cls-pos{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;width:30px;text-align:center}
+  .cls-pos-1{color:var(--gold)}
+  .cls-pos-2{color:var(--silver)}
+  .cls-pos-3{color:var(--bronze)}
+  .cls-pos-4,.cls-pos-5{color:var(--blue-bright)}
+  .cls-name{flex:1;font-weight:700;font-size:15px;letter-spacing:.5px}
+  .cls-ore{font-size:13px;color:var(--muted);letter-spacing:1px}
+  .cls-bonus{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--green-bright)}
+  .cls-total{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;color:var(--muted);font-size:12px}
+  .empty-cls{padding:24px;text-align:center;color:var(--muted);font-size:13px}
+
+  .toast{position:fixed;bottom:28px;right:28px;background:var(--dark3);border:1px solid var(--blue);color:#fff;font-weight:600;font-size:14px;letter-spacing:1px;padding:14px 24px;border-radius:4px;box-shadow:0 8px 32px rgba(0,0,0,.5),0 0 20px var(--blue-glow);transform:translateY(80px);opacity:0;transition:.3s;z-index:999}
+  .toast.show{transform:translateY(0);opacity:1}
+
+  .info-bar{margin:0 36px 20px;padding:14px 20px;background:rgba(36,119,201,.08);border:1px solid rgba(36,119,201,.2);border-radius:3px;font-size:13px;color:var(--muted);line-height:1.6}
+  .info-bar strong{color:var(--blue-bright)}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sb-brand">
+    <span class="sb-brand-icon">⚙</span>
+    <span class="sb-brand-text">SERVICE</span>
+  </div>
+  <nav class="sb-nav">
+    <a href="service-dashboard.html" class="sb-link"><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
+    <a href="service-invoiri.html" class="sb-link"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
+    <a href="service-pontaje.html" class="sb-link active"><span class="sb-icon">💰</span><span class="sb-label">Pontaje</span></a>
+    <a href="service-admin.html" class="sb-link" id="adminLink" style="display:none"><span class="sb-icon">🛡</span><span class="sb-label">Admin</span></a>
+  </nav>
+  <div class="sb-bottom">
+    <div class="sb-user">
+      <span class="sb-user-icon">👤</span>
+      <div class="sb-user-info">
+        <span class="sb-user-label">Conectat ca</span>
+        <span class="sb-username" id="navUsername">—</span>
+      </div>
+    </div>
+    <button class="sb-logout" onclick="logout()">
+      <span class="sb-logout-icon">⏻</span>
+      <span class="sb-logout-label">Logout</span>
+    </button>
+  </div>
+</aside>
+
+<div class="main-content">
+
+<div class="hero">
+  <div class="hero-label">Service — Salarizare</div>
+  <div class="hero-title">💰 Pontaje</div>
+  <div class="hero-sub">Evidența orelor lucrate și calculul automat al salariilor.</div>
+  <div class="notif-wrap">
+    <button class="notif-btn" onclick="toggleNotif(event)">
+      🔔
+      <span class="notif-badge" id="notifBadge">0</span>
+    </button>
+    <div class="notif-panel" id="notifPanel">
+      <div class="notif-head">
+        <div class="notif-title">Notificări</div>
+        <button class="notif-mark" onclick="markAllRead()">Marchează tot</button>
+      </div>
+      <div class="notif-list" id="notifList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat"><div class="stat-value" id="statTotal">—</div><div class="stat-label">Total Persoane</div></div>
+  <div class="stat"><div class="stat-value" id="statCalif">—</div><div class="stat-label">Calificate (≥15 ore)</div></div>
+  <div class="stat"><div class="stat-value" id="statSalar">—</div><div class="stat-label">Total Salarii Brute</div></div>
+</div>
+
+<div class="info-bar">
+  <strong>Reguli salarizare:</strong> Salariu de bază <strong>$500,000</strong> pentru persoanele cu <strong>≥ 15 ore</strong> pontaj.
+  Bonusuri top 5: 🥇 $1,000,000 &nbsp;|&nbsp; 🥈 $800,000 &nbsp;|&nbsp; 🥉 $600,000 &nbsp;|&nbsp; 4️⃣ $400,000 &nbsp;|&nbsp; 5️⃣ $200,000
+</div>
+
+<div class="page-actions">
+  <span class="section-label">Personal Service</span>
+  <button class="btn-save" id="saveBtn" onclick="save()" style="display:none">💾 Salvează Pontaje</button>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Nume</th>
+        <th>Grad</th>
+        <th style="text-align:center">Ore Pontaj</th>
+        <th>Salariu de Bază</th>
+        <th>Bonus Clasament</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<div class="clasament-wrap" id="clasamentWrap">
+  <div class="clasament-header">
+    <span>🏆</span>
+    <div>
+      <div class="clasament-title">Clasament Pontaje</div>
+      <div class="clasament-sub">Top 5 cu cele mai multe ore — bonusuri aplicate automat</div>
+    </div>
+  </div>
+  <div class="clasament-body" id="clasamentBody">
+    <div class="empty-cls">Se încarcă...</div>
+  </div>
+</div>
+
+<div class="toast" id="toast">✓ Pontaje salvate cu succes</div>
+
+</div>
+
+<script>
+let user;
+const SALARY_BASE = 500000;
+const BONUS = [1000000, 800000, 600000, 400000, 200000];
+const BONUS_LABELS = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+const MIN_ORE = 15;
+
+function fmt(n){ return '$' + n.toLocaleString('ro-RO'); }
+
+async function init(){
+  const res = await fetch('/me');
+  user = await res.json();
+  if(!user){ location.href='service-login.html'; return; }
+  document.getElementById('navUsername').textContent = user.username;
+  const isLeader = user.role && user.role.toLowerCase() === 'leader';
+  if(isLeader){
+    const al = document.getElementById('adminLink');
+    if(al) al.style.display = '';
+    document.getElementById('saveBtn').style.display = '';
+  }
+  await load();
+  loadNotifCount();
+  setInterval(loadNotifCount, 30000);
+}
+
+let tableData = [];
+
+async function load(){
+  const res = await fetch('/service');
+  const data = await res.json();
+  tableData = data.filter(d => d.nume && d.nume.trim() !== '');
+  render();
+}
+
+function getOre(d){ return parseFloat((d.pontaj || '').toString().replace(',','.')) || 0; }
+
+function calcSalarii(rows){
+  // Sort by ore desc for ranking
+  const sorted = [...rows].map((d,i)=>({...d, _idx:i, ore: getOre(d)}))
+                           .filter(d=>d.ore>0)
+                           .sort((a,b)=>b.ore-a.ore);
+  const rankMap = {}; // index -> rank (1-based, only top 5)
+  sorted.forEach((d,i)=>{ if(i<5) rankMap[d._idx] = i+1; });
+  return { rankMap, sorted };
+}
+
+function render(){
+  const tbody = document.getElementById('tableBody');
+  const isLeader = user.role && user.role.toLowerCase() === 'leader';
+  const { rankMap, sorted } = calcSalarii(tableData.map((d,i)=>({...d,_idx:i})));
+
+  let html = '';
+  let totalSalar = 0;
+  let calif = 0;
+
+  tableData.forEach((d, i)=>{
+    const ore = getOre(d);
+    const qualifies = ore >= MIN_ORE;
+    const rank = rankMap[i];
+    const bonus = rank ? BONUS[rank-1] : 0;
+    const salarBase = qualifies ? SALARY_BASE : 0;
+    const total = salarBase + bonus;
+    totalSalar += total;
+    if(qualifies) calif++;
+
+    const salarCell = qualifies
+      ? `<span class="money-cell money-qual">${fmt(SALARY_BASE)}</span>`
+      : `<span class="money-no">— (sub ${MIN_ORE}h)</span>`;
+
+    let bonusCell;
+    if(rank){
+      bonusCell = `<span class="rank-badge rank-${rank}">${BONUS_LABELS[rank-1]} ${fmt(BONUS[rank-1])}</span>`;
+    } else {
+      bonusCell = `<span class="rank-none">—</span>`;
+    }
+
+    const totalCell = total > 0
+      ? `<span class="money-cell money-qual" style="font-size:18px">${fmt(total)}</span>`
+      : `<span class="money-no">—</span>`;
+
+    const pontajCell = isLeader
+      ? `<input class="pontaj-input" type="number" min="0" max="999" step="0.5" value="${ore || ''}" placeholder="0" data-idx="${i}" onchange="onPontajChange(${i}, this.value)">`
+      : `<span class="cell-text" style="text-align:center;display:block">${ore > 0 ? ore + ' h' : '—'}</span>`;
+
+    html += `<tr>
+      <td class="row-num">${i+1}</td>
+      <td><span class="cell-text">${esc(d.nume)}</span></td>
+      <td><span class="grade-text">${esc(d.grad||'—')}</span></td>
+      <td style="text-align:center">${pontajCell}</td>
+      <td>${salarCell}</td>
+      <td>${bonusCell}</td>
+      <td>${totalCell}</td>
+    </tr>`;
+  });
+
+  if(tableData.length === 0){
+    html = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted);font-size:13px">Nicio persoană înregistrată în evidența Service.</td></tr>`;
+  }
+
+  tbody.innerHTML = html;
+
+  document.getElementById('statTotal').textContent = tableData.length;
+  document.getElementById('statCalif').textContent = calif;
+  document.getElementById('statSalar').textContent = fmt(totalSalar);
+
+  renderClasament(sorted, rankMap);
+}
+
+function onPontajChange(idx, val){
+  tableData[idx].pontaj = val;
+  render();
+}
+
+function renderClasament(sorted, rankMap){
+  const body = document.getElementById('clasamentBody');
+  const top = sorted.slice(0,5);
+  if(!top.length){
+    body.innerHTML = `<div class="empty-cls">Nu există ore înregistrate.</div>`;
+    return;
+  }
+  body.innerHTML = top.map((d,i)=>{
+    const rank = i+1;
+    const bonus = BONUS[i];
+    const qualifies = d.ore >= MIN_ORE;
+    const salarBase = qualifies ? SALARY_BASE : 0;
+    const total = salarBase + bonus;
+    return `<div class="clasament-row">
+      <div class="cls-pos cls-pos-${rank}">${rank}</div>
+      <div style="font-size:20px">${BONUS_LABELS[i]}</div>
+      <div class="cls-name">${esc(d.nume)} <span style="font-weight:400;color:var(--muted);font-size:12px;letter-spacing:1px;text-transform:uppercase">${esc(d.grad||'')}</span></div>
+      <div class="cls-ore">${d.ore} ore</div>
+      <div style="text-align:right">
+        <div class="cls-bonus">+${fmt(bonus)}</div>
+        <div class="cls-total">Total: ${fmt(total)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function save(){
+  // Save pontaj back to /service endpoint (updates pontaj field only, keeps other data)
+  const payload = tableData.map(d=>({ nume: d.nume, cnp: d.cnp||'', grad: d.grad||'', pontaj: d.pontaj||'' }));
+  const res = await fetch('/service', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  });
+  if(res.ok){
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 3000);
+  }
+}
+
+function esc(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ── NOTIFICATIONS ── */
+async function loadNotifCount(){
+  try{
+    const r = await fetch('/notifications/count');
+    const j = await r.json();
+    const b = document.getElementById('notifBadge');
+    if(j.count>0){ b.textContent = j.count>99?'99+':j.count; b.classList.add('show'); }
+    else b.classList.remove('show');
+  }catch(e){}
+}
+async function loadNotifList(){
+  const list = document.getElementById('notifList');
+  list.innerHTML = `<div class="notif-empty">Se încarcă...</div>`;
+  try{
+    const r = await fetch('/notifications');
+    const items = await r.json();
+    if(!items.length){ list.innerHTML = `<div class="notif-empty">Nicio notificare.</div>`; return; }
+    list.innerHTML = items.map(n=>{
+      const time = new Date((n.createdAt||'').replace(' ','T')+'Z').toLocaleString('ro-RO');
+      return `<div class="notif-item ${n.read?'':'unread'}" onclick="markRead(${n.id}, this)">
+        <div class="notif-msg">${esc(n.message)}</div>
+        <div class="notif-time">${time}</div>
+      </div>`;
+    }).join('');
+  }catch(e){ list.innerHTML = `<div class="notif-empty">Eroare la încărcare.</div>`; }
+}
+async function markRead(id, el){
+  if(el && el.classList.contains('unread')){
+    el.classList.remove('unread');
+    await fetch(`/notifications/${id}/read`, {method:'PATCH'}).catch(()=>{});
+    loadNotifCount();
+  }
+}
+async function markAllRead(){
+  await fetch('/notifications/read-all', {method:'POST'}).catch(()=>{});
+  document.querySelectorAll('.notif-item.unread').forEach(e=>e.classList.remove('unread'));
+  loadNotifCount();
+}
+function toggleNotif(ev){
+  ev.stopPropagation();
+  const p = document.getElementById('notifPanel');
+  const open = p.classList.toggle('show');
+  if(open) loadNotifList();
+}
+document.addEventListener('click', (e)=>{
+  const w = document.querySelector('.notif-wrap');
+  if(w && !w.contains(e.target)) document.getElementById('notifPanel').classList.remove('show');
+});
+
+async function logout(){
+  await fetch('/logout',{method:'POST'}).catch(()=>{});
+  location.href='service-login.html';
+}
+
+init();
+</script>
+</body>
+</html>
