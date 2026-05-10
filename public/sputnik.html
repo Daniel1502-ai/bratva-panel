@@ -303,13 +303,13 @@
     <span class="sb-brand-text">BRATVA</span>
   </div>
   <nav class="sb-nav">
-    <a href="dashboard.html"  class="sb-link"><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
-    <a href="bratva.html"     class="sb-link"><span class="sb-icon">🔱</span><span class="sb-label">Bratva</span></a>
-    <a href="sputnik.html"    class="sb-link active"><span class="sb-icon">⚡</span><span class="sb-label">Sputnik</span></a>
-    <a href="task.html"       class="sb-link"><span class="sb-icon">📋</span><span class="sb-label">Task</span></a>
-    <a href="calculator.html" class="sb-link"><span class="sb-icon">💰</span><span class="sb-label">Calculator</span></a>
-    <a href="invoiri.html"   class="sb-link"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
-    <a href="admin.html"      class="sb-link" id="adminLink" style="display:none"><span class="sb-icon">🛡</span><span class="sb-label">Admin</span></a>
+    <a href="/dashboard"  class="sb-link"><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
+    <a href="/bratva-panel"     class="sb-link"><span class="sb-icon">🔱</span><span class="sb-label">Bratva</span></a>
+    <a href="/sputnik-panel"    class="sb-link active"><span class="sb-icon">⚡</span><span class="sb-label">Sputnik</span></a>
+    <a href="/task"       class="sb-link"><span class="sb-icon">📋</span><span class="sb-label">Task</span></a>
+    <a href="/calculator" class="sb-link"><span class="sb-icon">💰</span><span class="sb-label">Calculator</span></a>
+    <a href="/invoiri"   class="sb-link"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
+    <a href="/admin"      class="sb-link" id="adminLink" style="display:none"><span class="sb-icon">🛡</span><span class="sb-label">Admin</span></a>
   </nav>
   <div class="sb-bottom">
     <div class="sb-user">
@@ -338,8 +338,8 @@
 
 <!-- PAGE TABS -->
 <div class="page-tabs">
-  <a class="page-tab active" href="sputnik.html">⚡ Pagina 1 &nbsp;(1–35)</a>
-  <a class="page-tab" href="sputnik2.html">⚡ Pagina 2 &nbsp;(36–70)</a>
+  <a class="page-tab active" href="/sputnik-panel">⚡ Pagina 1 &nbsp;(1–35)</a>
+  <a class="page-tab" href="/sputnik2-panel">⚡ Pagina 2 &nbsp;(36–70)</a>
 </div>
 
 <div class="table-wrap">
@@ -376,7 +376,7 @@ function applyColor(sel){
 async function init(){
   const res = await fetch("/me");
   user = await res.json();
-  if(!user){ location.href="bratva-login.html"; return; }
+  if(!user){ location.href="/login"; return; }
   document.getElementById("navUsername").textContent = user.username;
   if(user.role && user.role.toLowerCase() === "leader"){
     document.getElementById("adminLink").style.display = "";
@@ -384,13 +384,33 @@ async function init(){
   load();
 }
 
+function sortByGrade(data){
+  return [...data].sort((a, b) => {
+    const hasA = a.nume && a.nume.trim() !== "";
+    const hasB = b.nume && b.nume.trim() !== "";
+    if(!hasA && !hasB) return 0;
+    if(!hasA) return 1;
+    if(!hasB) return -1;
+    const iA = grades.indexOf(a.grad);
+    const iB = grades.indexOf(b.grad);
+    const rankA = iA === -1 ? grades.length : iA;
+    const rankB = iB === -1 ? grades.length : iB;
+    return rankA - rankB;
+  });
+}
+
 function createRows(data=[]){
   const tbody = document.getElementById("tableBody");
   let html = "";
   const isLeader = user.role === "leader";
 
+  const filled = data.filter(d => d.nume && d.nume.trim() !== "");
+  const empty  = data.filter(d => !d.nume || d.nume.trim() === "");
+  const sorted = [...sortByGrade(filled), ...empty];
+  while(sorted.length < 35) sorted.push({});
+
   for(let i=0;i<35;i++){
-    const d = data[i]||{};
+    const d = sorted[i]||{};
 
     if(isLeader){
       const daNu = (val) => `
@@ -431,18 +451,20 @@ function createRows(data=[]){
       applyColor(sel);
       sel.addEventListener("change", ()=>applyColor(sel));
     });
+
+    // Re-sort live când se schimbă gradul
+    document.querySelectorAll("select.grade-select").forEach(sel=>{
+      sel.addEventListener("change", ()=>{
+        const data = collectData();
+        createRows(data);
+      });
+    });
   } else {
     document.getElementById("saveBtn").style.display="none";
   }
 }
 
-async function load(){
-  const res = await fetch("/sputnik");
-  const data = await res.json();
-  createRows(data);
-}
-
-async function save(){
+function collectData(){
   const rows = document.querySelectorAll("#tableBody tr");
   const data = [];
   rows.forEach(r=>{
@@ -460,6 +482,17 @@ async function save(){
       prezenta: selects[2].value
     });
   });
+  return data;
+}
+
+async function load(){
+  const res = await fetch("/sputnik");
+  const data = await res.json();
+  createRows(data);
+}
+
+async function save(){
+  const data = collectData();
   await fetch("/sputnik",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
   showToast();
 }
@@ -472,7 +505,7 @@ function showToast(){
 
 async function logout(){
   await fetch("/logout",{method:"POST"}).catch(()=>{});
-  location.href="bratva-login.html";
+  location.href="/login";
 }
 
 init();
