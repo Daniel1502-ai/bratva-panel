@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<title>Service — Amenzi</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#2477c9;--blue-bright:#4aa3ff;--blue-glow:rgba(36,119,201,.5);
+    --dark:#070a0f;--dark2:#0f141b;--dark3:#161d27;--dark4:#1e2731;
+    --border:#1f2a36;--border2:#2a3949;--text:#e8eef5;--muted:#6a7584;
+    --orange:#e67e22;--red:#e74c3c;--green:#27ae60;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Rajdhani',sans-serif;background:var(--dark);color:var(--text);min-height:100vh;background-image:linear-gradient(rgba(7,10,15,.85),rgba(7,10,15,.92)),url("https://i.imgur.com/7YqgLz2.jpeg");background-size:cover;background-position:center;background-attachment:fixed;display:flex;}
+  :root{--sb-collapsed:64px;--sb-expanded:220px;}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sb-collapsed);background:rgba(15,20,27,.96);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:200;transition:width .28s cubic-bezier(.4,0,.2,1);overflow:hidden;backdrop-filter:blur(8px)}
+  .sidebar:hover{width:var(--sb-expanded)}
+  .sb-brand{height:64px;display:flex;align-items:center;padding:0 18px;gap:14px;border-bottom:1px solid var(--border);overflow:hidden;white-space:nowrap}
+  .sb-brand-icon{font-size:22px;color:var(--blue-bright);text-shadow:0 0 20px var(--blue-glow);width:28px;text-align:center}
+  .sb-brand-text{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:4px;color:var(--blue-bright);text-shadow:0 0 20px var(--blue-glow);opacity:0;transition:opacity .2s .05s}
+  .sidebar:hover .sb-brand-text{opacity:1}
+  .sb-nav{flex:1;display:flex;flex-direction:column;padding:10px 0;gap:2px;overflow:hidden}
+  .sb-link{display:flex;align-items:center;gap:14px;padding:0 18px;height:44px;text-decoration:none;color:var(--muted);font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;white-space:nowrap;transition:.15s;border-left:2px solid transparent}
+  .sb-link:hover{color:var(--text);background:rgba(255,255,255,.04)}
+  .sb-link.active{color:var(--text);background:rgba(36,119,201,.12);border-left-color:var(--blue-bright)}
+  .sb-icon{font-size:18px;width:28px;text-align:center}
+  .sb-label{opacity:0;transition:opacity .18s .06s}
+  .sidebar:hover .sb-label{opacity:1}
+  .sb-bottom{border-top:1px solid var(--border);padding:12px 0;display:flex;flex-direction:column;gap:4px;overflow:hidden}
+  .sb-user{display:flex;align-items:center;gap:14px;padding:6px 18px;white-space:nowrap;overflow:hidden}
+  .sb-user-icon{font-size:16px;width:28px;text-align:center;color:var(--muted)}
+  .sb-user-info{display:flex;flex-direction:column;gap:1px;opacity:0;transition:opacity .18s .06s}
+  .sidebar:hover .sb-user-info{opacity:1}
+  .sb-user-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+  .sb-username{font-weight:700;font-size:14px;color:var(--text);max-width:130px;overflow:hidden;text-overflow:ellipsis}
+  .sb-logout{display:flex;align-items:center;gap:14px;padding:0 18px;height:40px;background:transparent;color:var(--blue-bright);border:none;cursor:pointer;font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;width:100%;text-align:left;font-family:'Rajdhani',sans-serif}
+  .sb-logout:hover{background:rgba(36,119,201,.18);color:#fff}
+  .sb-logout-icon{font-size:16px;width:28px;text-align:center}
+  .sb-logout-label{opacity:0;transition:opacity .18s .06s}
+  .sidebar:hover .sb-logout-label{opacity:1}
+  .main-content{margin-left:var(--sb-collapsed);flex:1;min-width:0;padding:40px 36px 48px}
+  .hero{margin-bottom:32px;position:relative}
+  .hero-label{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--blue-bright);margin-bottom:6px}
+  .hero-title{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:6px;line-height:1}
+  .hero-sub{font-size:14px;letter-spacing:1px;color:var(--muted);margin-top:6px}
+  /* Notif */
+  .notif-wrap{position:absolute;top:0;right:0;}
+  .notif-btn{position:relative;background:rgba(15,20,27,.85);border:1px solid var(--border2);color:var(--text);width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;transition:.2s}
+  .notif-btn:hover{border-color:var(--blue);box-shadow:0 0 16px var(--blue-glow);color:var(--blue-bright)}
+  .notif-badge{position:absolute;top:-4px;right:-4px;background:#e74c3c;color:#fff;font-size:11px;font-weight:700;min-width:20px;height:20px;border-radius:10px;display:none;align-items:center;justify-content:center;padding:0 5px}
+  .notif-badge.show{display:flex}
+  .notif-panel{position:absolute;top:54px;right:0;width:360px;max-height:480px;background:rgba(15,20,27,.98);border:1px solid var(--border2);border-radius:6px;box-shadow:0 16px 48px rgba(0,0,0,.6);overflow:hidden;display:none;z-index:300}
+  .notif-panel.show{display:flex;flex-direction:column}
+  .notif-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--dark3)}
+  .notif-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:3px;color:var(--blue-bright)}
+  .notif-mark{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;transition:.15s}
+  .notif-mark:hover{color:var(--blue-bright)}
+  .notif-list{overflow-y:auto;max-height:400px}
+  .notif-item{padding:12px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:.15s}
+  .notif-item:hover{background:rgba(255,255,255,.025)}
+  .notif-item.unread{background:rgba(36,119,201,.08);border-left:2px solid var(--blue-bright)}
+  .notif-msg{font-size:13px;font-weight:500;color:var(--text)}
+  .notif-time{font-size:10px;color:var(--muted);margin-top:3px}
+  .notif-empty{padding:36px 18px;text-align:center;color:var(--muted);font-size:13px}
+  /* Leader form */
+  .leader-card{background:rgba(15,20,27,.9);border:1px solid var(--border2);border-radius:6px;padding:28px;margin-bottom:32px;backdrop-filter:blur(6px)}
+  .leader-card-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:4px;color:var(--blue-bright);margin-bottom:20px;display:flex;align-items:center;gap:10px}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+  .form-grid-wide{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+  .form-group{display:flex;flex-direction:column;gap:6px}
+  .form-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .form-input,.form-select{font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:500;background:var(--dark3);color:var(--text);border:1px solid var(--border2);border-radius:3px;padding:10px 14px;width:100%;outline:none;transition:.15s}
+  .form-input:focus,.form-select:focus{border-color:var(--blue-bright);background:var(--dark4)}
+  .btn-adauga{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:2px;text-transform:uppercase;background:var(--red);color:#fff;border:none;padding:12px 28px;border-radius:3px;cursor:pointer;transition:.2s}
+  .btn-adauga:hover{background:#c0392b;box-shadow:0 0 20px rgba(231,76,60,.4);transform:translateY(-1px)}
+  /* Amenzi list */
+  .amenzi-list{display:flex;flex-direction:column;gap:14px}
+  .amenda-card{background:rgba(15,20,27,.9);border:1px solid var(--border2);border-radius:6px;padding:20px 24px;backdrop-filter:blur(6px);transition:.2s;position:relative}
+  .amenda-card:hover{border-color:var(--border);background:rgba(15,20,27,1)}
+  .amenda-card.activa{border-left:3px solid var(--red)}
+  .amenda-card.platita{border-left:3px solid var(--green);opacity:.75}
+  .amenda-card.expirata{border-left:3px solid var(--muted);opacity:.65}
+  .amenda-card[id]{scroll-margin-top:80px}
+  .amenda-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+  .amenda-name{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px}
+  .amenda-status{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 10px;border-radius:3px;border:1px solid}
+  .amenda-status.activa{background:rgba(231,76,60,.12);border-color:var(--red);color:var(--red)}
+  .amenda-status.platita{background:rgba(39,174,96,.12);border-color:var(--green);color:var(--green)}
+  .amenda-status.expirata{background:rgba(106,117,132,.12);border-color:var(--muted);color:var(--muted)}
+  .amenda-body{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px}
+  .amenda-field{display:flex;flex-direction:column;gap:3px}
+  .amenda-field-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+  .amenda-field-value{font-size:15px;font-weight:600;color:var(--text)}
+  .amenda-field-value.suma{color:var(--red);font-size:18px;font-weight:700}
+  .amenda-footer{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);padding-top:12px;margin-top:4px;flex-wrap:wrap;gap:8px}
+  .amenda-meta{font-size:12px;color:var(--muted)}
+  .amenda-actions{display:flex;gap:8px}
+  .btn-platita{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;background:rgba(39,174,96,.15);color:var(--green);border:1px solid var(--green);padding:6px 14px;border-radius:3px;cursor:pointer;transition:.15s}
+  .btn-platita:hover{background:rgba(39,174,96,.3)}
+  .btn-sterge{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;background:rgba(231,76,60,.12);color:var(--red);border:1px solid var(--red);padding:6px 14px;border-radius:3px;cursor:pointer;transition:.15s}
+  .btn-sterge:hover{background:rgba(231,76,60,.3)}
+  .empty-state{text-align:center;padding:48px 24px;color:var(--muted);font-size:15px}
+  .toast{position:fixed;bottom:28px;right:28px;background:var(--dark3);border:1px solid var(--blue);color:#fff;font-weight:600;font-size:14px;letter-spacing:1px;padding:14px 24px;border-radius:4px;box-shadow:0 8px 32px rgba(0,0,0,.5),0 0 20px var(--blue-glow);transform:translateY(80px);opacity:0;transition:.3s;z-index:999}
+  .toast.show{transform:translateY(0);opacity:1}
+  .section-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:4px;margin-bottom:16px;color:var(--text)}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sb-brand">
+    <span class="sb-brand-icon">⚙</span>
+    <span class="sb-brand-text">SERVICE</span>
+  </div>
+  <nav class="sb-nav">
+    <a href="service-dashboard.html" class="sb-link"><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
+    <a href="service-evidenta.html"  class="sb-link"><span class="sb-icon">🔧</span><span class="sb-label">Service</span></a>
+    <a href="service-invoiri.html" class="sb-link"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
+    <a href="service-pontaje.html" class="sb-link"><span class="sb-icon">💰</span><span class="sb-label">Pontaje</span></a>
+    <a href="service-amenzi.html" class="sb-link active"><span class="sb-icon">⚠️</span><span class="sb-label">Amenzi</span></a>
+    <a href="service-admin.html" class="sb-link" id="adminLink" style="display:none"><span class="sb-icon">🛡</span><span class="sb-label">Admin</span></a>
+  </nav>
+  <div class="sb-bottom">
+    <div class="sb-user">
+      <span class="sb-user-icon">👤</span>
+      <div class="sb-user-info">
+        <span class="sb-user-label">Conectat ca</span>
+        <span class="sb-username" id="navUsername">—</span>
+      </div>
+    </div>
+    <button class="sb-logout" onclick="logout()">
+      <span class="sb-logout-icon">⏻</span>
+      <span class="sb-logout-label">Logout</span>
+    </button>
+  </div>
+</aside>
+
+<div class="main-content">
+  <div class="hero">
+    <div class="hero-label">Gestionare Sancțiuni</div>
+    <div class="hero-title">⚠️ Amenzi Service</div>
+    <div class="hero-sub">Evidența amenzilor personalului Service.</div>
+    <div class="notif-wrap">
+      <button class="notif-btn" onclick="toggleNotif(event)">🔔<span class="notif-badge" id="notifBadge">0</span></button>
+      <div class="notif-panel" id="notifPanel">
+        <div class="notif-head">
+          <div class="notif-title">Notificări</div>
+          <button class="notif-mark" onclick="markAllRead()">Marchează tot</button>
+        </div>
+        <div class="notif-list" id="notifList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEADER FORM -->
+  <div class="leader-card" id="leaderForm" style="display:none">
+    <div class="leader-card-title">➕ Adaugă Amendă</div>
+    <div class="form-grid-wide" style="margin-bottom:16px">
+      <div class="form-group">
+        <label class="form-label">Selectează Persoană</label>
+        <select class="form-select" id="fMember" onchange="onMemberChange()">
+          <option value="">— Selectează —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sumă (lei)</label>
+        <input class="form-input" type="number" id="fSuma" placeholder="ex: 500" min="1">
+      </div>
+    </div>
+    <div class="form-grid-wide" style="margin-bottom:16px">
+      <div class="form-group">
+        <label class="form-label">Motiv</label>
+        <input class="form-input" id="fMotiv" placeholder="Motivul amenzii...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Termen de Plată</label>
+        <input class="form-input" type="date" id="fTermen">
+      </div>
+    </div>
+    <input type="hidden" id="fCnp">
+    <input type="hidden" id="fNume">
+    <button class="btn-adauga" onclick="adaugaAmenda()">⚠️ Aplică Amendă</button>
+  </div>
+
+  <!-- LIST -->
+  <div class="section-title">📋 Lista Amenzi</div>
+  <div class="amenzi-list" id="amenziList">
+    <div class="empty-state">Se încarcă...</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let user, members = [];
+
+async function init(){
+  const r = await fetch("/me");
+  user = await r.json();
+  if(!user){ location.href="service-login.html"; return; }
+  document.getElementById("navUsername").textContent = user.username;
+  if(user.role?.toLowerCase()==="leader"){
+    document.getElementById("adminLink").style.display="";
+    document.getElementById("leaderForm").style.display="";
+    await loadMembers();
+  }
+  loadAmenzi();
+  loadNotifCount();
+  setInterval(loadNotifCount, 30000);
+  // Scroll to amenda if hash
+  setTimeout(scrollToHash, 600);
+}
+
+async function loadMembers(){
+  const r = await fetch("/service-members");
+  members = await r.json();
+  const sel = document.getElementById("fMember");
+  members.forEach(m=>{
+    const opt = document.createElement("option");
+    opt.value = m.cnp;
+    opt.textContent = m.nume;
+    opt.dataset.cnp = m.cnp;
+    opt.dataset.nume = m.nume;
+    sel.appendChild(opt);
+  });
+}
+
+function onMemberChange(){
+  const sel = document.getElementById("fMember");
+  const opt = sel.options[sel.selectedIndex];
+  document.getElementById("fCnp").value = opt.dataset.cnp || "";
+  document.getElementById("fNume").value = opt.dataset.nume || "";
+}
+
+async function adaugaAmenda(){
+  const cnp = document.getElementById("fCnp").value.trim();
+  const nume = document.getElementById("fNume").value.trim();
+  const suma = document.getElementById("fSuma").value.trim();
+  const motiv = document.getElementById("fMotiv").value.trim();
+  const termen = document.getElementById("fTermen").value;
+  if(!cnp||!suma||!motiv||!termen){ showToast("Completează toate câmpurile!","#e74c3c"); return; }
+  const res = await fetch("/amenzi",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({cnp,nume,suma,motiv,termen,faction:"service"})});
+  if(!res.ok){ showToast("Eroare la salvare!","#e74c3c"); return; }
+  document.getElementById("fMember").value="";
+  document.getElementById("fCnp").value="";
+  document.getElementById("fNume").value="";
+  document.getElementById("fSuma").value="";
+  document.getElementById("fMotiv").value="";
+  document.getElementById("fTermen").value="";
+  showToast("✓ Amendă aplicată!");
+  loadAmenzi();
+}
+
+async function loadAmenzi(){
+  const r = await fetch("/amenzi");
+  const list = await r.json();
+  const cont = document.getElementById("amenziList");
+  if(!list.length){ cont.innerHTML='<div class="empty-state">📭 Nicio amendă.</div>'; return; }
+  cont.innerHTML = list.map(a=>renderAmenda(a)).join("");
+}
+
+function renderAmenda(a){
+  const dateStr = (a.postedAt||"").substring(0,10);
+  const actions = user.role?.toLowerCase()==="leader" ? `
+    <div class="amenda-actions">
+      ${a.status==='activa'?`<button class="btn-platita" onclick="marcheazaPlatita(${a.id})">✓ Platită</button>`:''}
+      <button class="btn-sterge" onclick="stergeAmenda(${a.id})">🗑 Șterge</button>
+    </div>` : '';
+  return `<div class="amenda-card ${a.status}" id="amenda-${a.id}">
+    <div class="amenda-header">
+      <div class="amenda-name">${esc(a.nume)}</div>
+      <span class="amenda-status ${a.status}">${a.status.toUpperCase()}</span>
+    </div>
+    <div class="amenda-body">
+      <div class="amenda-field"><div class="amenda-field-label">Sumă</div><div class="amenda-field-value suma">${a.suma} lei</div></div>
+      <div class="amenda-field"><div class="amenda-field-label">Motiv</div><div class="amenda-field-value">${esc(a.motiv)}</div></div>
+      <div class="amenda-field"><div class="amenda-field-label">Termen</div><div class="amenda-field-value">${a.termen}</div></div>
+    </div>
+    <div class="amenda-footer">
+      <div class="amenda-meta">Postat de <strong>${esc(a.postedBy)}</strong> pe ${dateStr}</div>
+      ${actions}
+    </div>
+  </div>`;
+}
+
+async function marcheazaPlatita(id){
+  await fetch(`/amenzi/${id}/platita`,{method:"PATCH"});
+  showToast("✓ Marcată ca platită!","#27ae60");
+  loadAmenzi();
+}
+
+async function stergeAmenda(id){
+  if(!confirm("Ștergi amenda?")) return;
+  await fetch(`/amenzi/${id}`,{method:"DELETE"});
+  showToast("Amendă ștearsă.");
+  loadAmenzi();
+}
+
+function scrollToHash(){
+  if(!location.hash) return;
+  const el = document.querySelector(location.hash);
+  if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.style.outline='2px solid var(--blue-bright)'; setTimeout(()=>el.style.outline='',2000); }
+}
+
+function esc(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function showToast(msg, color){
+  const t=document.getElementById("toast");
+  t.textContent=msg;
+  t.style.borderColor=color||"var(--blue)";
+  t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),3000);
+}
+
+async function loadNotifCount(){
+  try{ const r=await fetch("/notifications/count"); const j=await r.json(); const b=document.getElementById("notifBadge"); if(j.count>0){b.textContent=j.count>99?"99+":j.count;b.classList.add("show");}else b.classList.remove("show"); }catch(e){}
+}
+async function loadNotifList(){
+  const list=document.getElementById("notifList");
+  list.innerHTML=`<div class="notif-empty">Se încarcă...</div>`;
+  try{
+    const r=await fetch("/notifications"); const items=await r.json();
+    if(!items.length){list.innerHTML=`<div class="notif-empty">Nicio notificare.</div>`;return;}
+    list.innerHTML=items.map(n=>{
+      const time=new Date((n.createdAt||"").replace(' ','T')+"Z").toLocaleString('ro-RO');
+      const href=n.amendaId?`service-amenzi.html#amenda-${n.amendaId}`:'#';
+      return `<div class="notif-item ${n.read?'':'unread'}" onclick="markRead(${n.id},this,'${href}')"><div class="notif-msg">${esc(n.message)}</div><div class="notif-time">${time}</div></div>`;
+    }).join("");
+  }catch(e){list.innerHTML=`<div class="notif-empty">Eroare.</div>`;}
+}
+async function markRead(id,el,href){ if(el&&el.classList.contains('unread')){ el.classList.remove('unread'); await fetch(`/notifications/${id}/read`,{method:"PATCH"}).catch(()=>{}); loadNotifCount(); } if(href&&href!=='#') location.href=href; }
+async function markAllRead(){ await fetch("/notifications/read-all",{method:"POST"}).catch(()=>{}); document.querySelectorAll(".notif-item.unread").forEach(e=>e.classList.remove('unread')); loadNotifCount(); }
+function toggleNotif(ev){ ev.stopPropagation(); const p=document.getElementById("notifPanel"); const open=p.classList.toggle("show"); if(open) loadNotifList(); }
+document.addEventListener("click",(e)=>{ const w=document.querySelector(".notif-wrap"); if(w&&!w.contains(e.target)) document.getElementById("notifPanel").classList.remove("show"); });
+async function logout(){ await fetch("/logout",{method:"POST"}).catch(()=>{}); location.href="service-login.html"; }
+init();
+</script>
+</body>
+</html>

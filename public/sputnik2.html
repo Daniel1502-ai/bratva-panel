@@ -363,6 +363,7 @@
           <th>Task Avansări</th>
           <th>Învoire</th>
           <th>Prezență</th>
+          <th style="text-align:center">Amendă</th>
         </tr>
       </thead>
       <tbody id="tableBody"></tbody>
@@ -453,6 +454,7 @@ function createRows(data=[]){
         <td><input value="${d.taskAvansari||""}" placeholder="—"></td>
         <td><span class="danu-text ${d.invoire=="Da"?"is-da":"is-nu"}" data-invoire="${d.invoire||"Nu"}">${d.invoire||"Nu"}</span></td>
         <td>${daNu(d.prezenta)}</td>
+        <td style="text-align:center">${d.amendaActiva?'⚠️':'<span style="color:var(--muted)">—</span>'}</td>
       </tr>`;
     } else {
       const sv = (v) => `<span class="cell-text ${v?"":"muted"}">${v||"—"}</span>`;
@@ -467,6 +469,7 @@ function createRows(data=[]){
         <td>${sv(d.taskAvansari)}</td>
         <td>${dn(d.invoire)}</td>
         <td>${dn(d.prezenta)}</td>
+        <td style="text-align:center">${d.amendaActiva?'⚠️':'<span style="color:var(--muted)">—</span>'}</td>
       </tr>`;
     }
   }

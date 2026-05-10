@@ -7,6 +7,7 @@ const bcrypt = require("bcrypt");
 const app = express();
 const db = new Database("/app/data/database.db");
 
+// Enable WAL mode for better performance
 db.pragma("journal_mode = WAL");
 
 app.use(express.json());
@@ -58,12 +59,10 @@ db.exec(`CREATE TABLE IF NOT EXISTS notifications (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     userId INTEGER NOT NULL,
     taskId INTEGER,
-    amendaId INTEGER,
     message TEXT NOT NULL,
     read INTEGER DEFAULT 0,
     createdAt TEXT DEFAULT (datetime('now'))
 )`);
-try { db.exec(`ALTER TABLE notifications ADD COLUMN amendaId INTEGER`); } catch {}
 db.exec(`CREATE TABLE IF NOT EXISTS invoiri (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     userId INTEGER,
@@ -81,25 +80,8 @@ db.exec(`CREATE TABLE IF NOT EXISTS service (
     nume TEXT, grad TEXT, pontaj TEXT
 )`);
 try { db.exec(`ALTER TABLE service ADD COLUMN cnp TEXT`); } catch {}
-try { db.exec(`ALTER TABLE service ADD COLUMN telefon TEXT`); } catch {}
 try { db.exec(`ALTER TABLE invoiri ADD COLUMN org TEXT DEFAULT 'bratva'`); } catch {}
 try { db.exec(`ALTER TABLE invoiri ADD COLUMN ora TEXT DEFAULT NULL`); } catch {}
-try { db.exec(`ALTER TABLE notifications ADD COLUMN org TEXT DEFAULT 'bratva'`); } catch {}
-
-// AMENZI TABLE
-db.exec(`CREATE TABLE IF NOT EXISTS amenzi (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    cnp TEXT NOT NULL,
-    nume TEXT NOT NULL,
-    suma INTEGER NOT NULL,
-    motiv TEXT NOT NULL,
-    termen TEXT NOT NULL,
-    status TEXT DEFAULT 'activa',
-    org TEXT DEFAULT 'bratva',
-    faction TEXT DEFAULT 'bratva',
-    postedBy TEXT NOT NULL,
-    postedAt TEXT DEFAULT (datetime('now'))
-)`);
 
 // ---------- AUTO-EXPIRY ----------
 function checkExpiredTasks() {
@@ -111,32 +93,25 @@ function checkExpiredTasks() {
     if (!expiredTasks.length) return;
 
     const updateTask = db.prepare(`UPDATE tasks SET status='expirat' WHERE id=?`);
-    const insertNotif = db.prepare(`INSERT INTO notifications (userId,taskId,message,org) VALUES (?,?,?,?)`);
-    const getUserByName = db.prepare(`SELECT id,org FROM users WHERE username=?`);
+    const insertNotif = db.prepare(`INSERT INTO notifications (userId,taskId,message) VALUES (?,?,?)`);
+    const getUserByName = db.prepare(`SELECT id FROM users WHERE username=?`);
+    const getAllUsers = db.prepare(`SELECT id FROM users`).all.bind(db.prepare(`SELECT id FROM users`));
 
     for (const task of expiredTasks) {
         updateTask.run(task.id);
         if (task.assignedTo && task.assignedTo !== 'all') {
             const u = getUserByName.get(task.assignedTo);
-            if (u) insertNotif.run(u.id, task.id, `⏰ Taskul "${task.title}" a expirat!`, u.org || 'bratva');
+            if (u) insertNotif.run(u.id, task.id, `⏰ Taskul "${task.title}" a expirat!`);
         } else {
-            const users = db.prepare(`SELECT id,COALESCE(org,'bratva') as org FROM users`).all();
+            const users = db.prepare(`SELECT id FROM users`).all();
             for (const u of users) {
-                insertNotif.run(u.id, task.id, `⏰ Taskul "${task.title}" a expirat!`, u.org || 'bratva');
+                insertNotif.run(u.id, task.id, `⏰ Taskul "${task.title}" a expirat!`);
             }
         }
     }
 }
-
-function checkExpiredAmenzi() {
-    const now = new Date().toISOString().substring(0, 10);
-    db.prepare(`UPDATE amenzi SET status='expirata' WHERE status='activa' AND termen < ?`).run(now);
-}
-
 setInterval(checkExpiredTasks, 60 * 1000);
-setInterval(checkExpiredAmenzi, 60 * 1000);
 setTimeout(checkExpiredTasks, 2000);
-setTimeout(checkExpiredAmenzi, 2000);
 
 // ---------- AUTH ----------
 function requireAuth(req, res, next) {
@@ -205,11 +180,7 @@ app.get("/bratva", requireAuth, (req, res) => {
     const today = new Date().toISOString().substring(0, 10);
     const active = db.prepare(`SELECT cnp FROM invoiri WHERE startDate<=? AND endDate>=?`).all(today, today);
     const set = new Set(active.map(r => (r.cnp || '').trim()).filter(Boolean));
-    rows.forEach(r => {
-        r.invoire = (r.cnp && set.has(r.cnp.trim())) ? "Da" : "Nu";
-        const amenda = db.prepare(`SELECT id FROM amenzi WHERE cnp=? AND status='activa' LIMIT 1`).get(r.cnp || '');
-        r.amendaActiva = amenda ? 1 : 0;
-    });
+    rows.forEach(r => { r.invoire = (r.cnp && set.has(r.cnp.trim())) ? "Da" : "Nu"; });
     res.json(rows);
 });
 
@@ -226,11 +197,7 @@ app.get("/sputnik", requireAuth, (req, res) => {
     const today = new Date().toISOString().substring(0, 10);
     const active = db.prepare(`SELECT cnp FROM invoiri WHERE startDate<=? AND endDate>=?`).all(today, today);
     const set = new Set(active.map(r => (r.cnp || '').trim()).filter(Boolean));
-    rows.forEach(r => {
-        r.invoire = (r.cnp && set.has(r.cnp.trim())) ? "Da" : "Nu";
-        const amenda = db.prepare(`SELECT id FROM amenzi WHERE cnp=? AND status='activa' LIMIT 1`).get(r.cnp || '');
-        r.amendaActiva = amenda ? 1 : 0;
-    });
+    rows.forEach(r => { r.invoire = (r.cnp && set.has(r.cnp.trim())) ? "Da" : "Nu"; });
     res.json(rows);
 });
 
@@ -247,11 +214,7 @@ app.get("/sputnik2", requireAuth, (req, res) => {
     const today = new Date().toISOString().substring(0, 10);
     const active = db.prepare(`SELECT cnp FROM invoiri WHERE startDate<=? AND endDate>=?`).all(today, today);
     const set = new Set(active.map(r => (r.cnp || '').trim()).filter(Boolean));
-    rows.forEach(r => {
-        r.invoire = (r.cnp && set.has(r.cnp.trim())) ? "Da" : "Nu";
-        const amenda = db.prepare(`SELECT id FROM amenzi WHERE cnp=? AND status='activa' LIMIT 1`).get(r.cnp || '');
-        r.amendaActiva = amenda ? 1 : 0;
-    });
+    rows.forEach(r => { r.invoire = (r.cnp && set.has(r.cnp.trim())) ? "Da" : "Nu"; });
     res.json(rows);
 });
 
@@ -268,25 +231,15 @@ app.get("/service", requireAuth, (req, res) => {
     const today = new Date().toISOString().substring(0, 10);
     const active = db.prepare(`SELECT cnp FROM invoiri WHERE startDate<=? AND endDate>=?`).all(today, today);
     const set = new Set(active.map(r => (r.cnp || '').trim()).filter(Boolean));
-    rows.forEach(r => {
-        r.invoire = (r.cnp && set.has(r.cnp.trim())) ? "Da" : "Nu";
-        const amenda = db.prepare(`SELECT id FROM amenzi WHERE cnp=? AND status='activa' LIMIT 1`).get(r.cnp || '');
-        r.amendaActiva = amenda ? 1 : 0;
-    });
+    rows.forEach(r => { r.invoire = (r.cnp && set.has(r.cnp.trim())) ? "Da" : "Nu"; });
     res.json(rows);
 });
 
 app.post("/service", requireRole("leader"), (req, res) => {
     db.prepare("DELETE FROM service").run();
-    const stmt = db.prepare(`INSERT INTO service (nume,cnp,grad,pontaj,telefon) VALUES (?,?,?,?,?)`);
-    for (const d of req.body) stmt.run(d.nume, d.cnp, d.grad, d.pontaj, d.telefon || '');
+    const stmt = db.prepare(`INSERT INTO service (nume,cnp,grad,pontaj) VALUES (?,?,?,?)`);
+    for (const d of req.body) stmt.run(d.nume, d.cnp, d.grad, d.pontaj);
     res.send("Saved");
-});
-
-// ---------- SERVICE MEMBERS LIST ----------
-app.get("/service-members", requireAuth, (req, res) => {
-    const rows = db.prepare(`SELECT nume, cnp FROM service WHERE nume IS NOT NULL AND nume!='' ORDER BY nume`).all();
-    res.json(rows);
 });
 
 // ---------- TASKS ----------
@@ -313,19 +266,6 @@ app.get("/members", requireAuth, (req, res) => {
     res.json(rows);
 });
 
-// All bratva+sputnik members with cnp for amenda form
-app.get("/bratva-members", requireAuth, (req, res) => {
-    const rows = db.prepare(
-        `SELECT nume, cnp, 'Bratva' as faction FROM bratva WHERE nume IS NOT NULL AND nume!=''
-         UNION ALL
-         SELECT nume, cnp, 'Sputnik' as faction FROM sputnik WHERE nume IS NOT NULL AND nume!=''
-         UNION ALL
-         SELECT nume, cnp, 'Sputnik' as faction FROM sputnik2 WHERE nume IS NOT NULL AND nume!=''
-         ORDER BY faction, nume`
-    ).all();
-    res.json(rows);
-});
-
 app.post("/tasks", requireRole("leader"), (req, res) => {
     const { title, description, priority, assignedTo, faction, deadline } = req.body;
     if (!title) return res.status(400).send("Titlul este obligatoriu");
@@ -339,15 +279,14 @@ app.post("/tasks", requireRole("leader"), (req, res) => {
 
     const taskId = result.lastInsertRowid;
     const assigned = assignedTo || 'all';
-    const userOrg = (req.session.user.org || 'bratva').toLowerCase();
-    const insertNotif = db.prepare(`INSERT INTO notifications (userId,taskId,message,org) VALUES (?,?,?,?)`);
+    const insertNotif = db.prepare(`INSERT INTO notifications (userId,taskId,message) VALUES (?,?,?)`);
 
     if (assigned !== 'all') {
         const u = db.prepare(`SELECT id FROM users WHERE username=?`).get(assigned);
-        if (u) insertNotif.run(u.id, taskId, `📋 Ai primit un task nou: "${title}"`, userOrg);
+        if (u) insertNotif.run(u.id, taskId, `📋 Ai primit un task nou: "${title}"`);
     } else {
-        const users = db.prepare(`SELECT id FROM users WHERE COALESCE(org,'bratva')=?`).all(userOrg);
-        for (const u of users) insertNotif.run(u.id, taskId, `📋 Task nou pentru toți: "${title}"`, userOrg);
+        const users = db.prepare(`SELECT id FROM users`).all();
+        for (const u of users) insertNotif.run(u.id, taskId, `📋 Task nou pentru toți: "${title}"`);
     }
     res.json({ id: taskId });
 });
@@ -363,93 +302,30 @@ app.delete("/tasks/:id", requireRole("leader"), (req, res) => {
     res.send("OK");
 });
 
-// ---------- AMENZI ----------
-app.get("/amenzi", requireAuth, (req, res) => {
-    const userOrg = (req.session.user.org || 'bratva').toLowerCase();
-    const { faction } = req.query;
-    let query = `SELECT * FROM amenzi WHERE org=?`;
-    const params = [userOrg];
-    if (faction) { query += ` AND faction=?`; params.push(faction); }
-    query += ` ORDER BY postedAt DESC`;
-    res.json(db.prepare(query).all(...params));
-});
-
-app.get("/amenzi/my", requireAuth, (req, res) => {
-    const cnp = req.session.user.cnp;
-    if (!cnp) return res.json([]);
-    const rows = db.prepare(`SELECT * FROM amenzi WHERE cnp=? ORDER BY postedAt DESC`).all(cnp);
-    res.json(rows);
-});
-
-app.get("/amenzi/:id", requireAuth, (req, res) => {
-    const row = db.prepare(`SELECT * FROM amenzi WHERE id=?`).get(req.params.id);
-    if (!row) return res.status(404).send("Inexistent");
-    res.json(row);
-});
-
-app.post("/amenzi", requireRole("leader"), (req, res) => {
-    const { cnp, nume, suma, motiv, termen, faction } = req.body;
-    if (!cnp || !nume || !suma || !motiv || !termen) return res.status(400).send("Date incomplete");
-    const userOrg = (req.session.user.org || 'bratva').toLowerCase();
-    const factionVal = faction || userOrg;
-    const postedBy = req.session.user.username;
-    const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
-
-    const result = db.prepare(
-        `INSERT INTO amenzi (cnp,nume,suma,motiv,termen,status,org,faction,postedBy,postedAt) VALUES (?,?,?,?,?,'activa',?,?,?,?)`
-    ).run(cnp, nume, parseInt(suma), motiv, termen, userOrg, factionVal, postedBy, now);
-
-    const amendaId = result.lastInsertRowid;
-
-    // Notify the member
-    const u = db.prepare(`SELECT id FROM users WHERE cnp=?`).get(cnp);
-    if (u) {
-        db.prepare(`INSERT INTO notifications (userId,amendaId,message,org) VALUES (?,?,?,?)`)
-          .run(u.id, amendaId, `⚠️ Ai primit o amendă nouă!`, userOrg);
-    }
-
-    res.json({ id: amendaId });
-});
-
-app.patch("/amenzi/:id/platita", requireRole("leader"), (req, res) => {
-    db.prepare(`UPDATE amenzi SET status='platita' WHERE id=?`).run(req.params.id);
-    res.send("OK");
-});
-
-app.delete("/amenzi/:id", requireRole("leader"), (req, res) => {
-    db.prepare(`DELETE FROM amenzi WHERE id=?`).run(req.params.id);
-    res.send("OK");
-});
-
 // ---------- NOTIFICATIONS ----------
 app.get("/notifications/count", requireAuth, (req, res) => {
-    const userOrg = (req.session.user.org || 'bratva').toLowerCase();
-    const row = db.prepare(`SELECT COUNT(*) as count FROM notifications WHERE userId=? AND read=0 AND COALESCE(org,'bratva')=?`).get(req.session.user.id, userOrg);
+    const row = db.prepare(`SELECT COUNT(*) as count FROM notifications WHERE userId=? AND read=0`).get(req.session.user.id);
     res.json({ count: row ? row.count : 0 });
 });
 
 app.get("/notifications", requireAuth, (req, res) => {
-    const userOrg = (req.session.user.org || 'bratva').toLowerCase();
-    const rows = db.prepare(`SELECT * FROM notifications WHERE userId=? AND COALESCE(org,'bratva')=? ORDER BY createdAt DESC LIMIT 30`).all(req.session.user.id, userOrg);
+    const rows = db.prepare(`SELECT * FROM notifications WHERE userId=? ORDER BY createdAt DESC LIMIT 30`).all(req.session.user.id);
     res.json(rows);
 });
 
 app.patch("/notifications/:id/read", requireAuth, (req, res) => {
-    const userOrg = (req.session.user.org || 'bratva').toLowerCase();
-    db.prepare(`UPDATE notifications SET read=1 WHERE id=? AND userId=? AND COALESCE(org,'bratva')=?`).run(req.params.id, req.session.user.id, userOrg);
+    db.prepare(`UPDATE notifications SET read=1 WHERE id=? AND userId=?`).run(req.params.id, req.session.user.id);
     res.send("OK");
 });
 
 app.post("/notifications/read-all", requireAuth, (req, res) => {
-    const userOrg = (req.session.user.org || 'bratva').toLowerCase();
-    db.prepare(`UPDATE notifications SET read=1 WHERE userId=? AND COALESCE(org,'bratva')=?`).run(req.session.user.id, userOrg);
+    db.prepare(`UPDATE notifications SET read=1 WHERE userId=?`).run(req.session.user.id);
     res.send("OK");
 });
 
 // ---------- ADMIN ----------
 app.get("/admin/users", requireRole("leader"), (req, res) => {
-    const userOrg = (req.session.user.org || 'bratva').toLowerCase();
-    res.json(db.prepare("SELECT id,username,role,cnp FROM users WHERE COALESCE(org,'bratva')=? ORDER BY id ASC").all(userOrg));
+    res.json(db.prepare("SELECT id,username,role,cnp FROM users ORDER BY id ASC").all());
 });
 
 app.patch("/admin/users/:id/role", requireRole("leader"), (req, res) => {
@@ -509,9 +385,9 @@ app.post("/invoiri", requireAuth, async (req, res) => {
     const leaders = db.prepare(
         `SELECT id FROM users WHERE LOWER(role)='leader' AND (COALESCE(org,'bratva')=? OR username='admin')`
     ).all(userOrg);
-    const insertNotif = db.prepare(`INSERT INTO notifications (userId,taskId,message,org) VALUES (?,?,?,?)`);
+    const insertNotif = db.prepare(`INSERT INTO notifications (userId,taskId,message) VALUES (?,?,?)`);
     for (const l of leaders) {
-        insertNotif.run(l.id, null, `📅 ${nume} a postat o învoire (${startDate} → ${endDate})`, userOrg);
+        insertNotif.run(l.id, null, `📅 ${nume} a postat o învoire (${startDate} → ${endDate})`);
     }
 
     res.json({ id: result.lastInsertRowid, endDate });
@@ -526,7 +402,8 @@ app.delete("/invoiri/:id", requireAuth, (req, res) => {
     res.send("OK");
 });
 
-// ---------- SETUP ADMIN ----------
+
+// ---------- SETUP ADMIN (TEMPORAR - sterge dupa folosire) ----------
 app.get("/setup-admin-x9k2", async (req, res) => {
     const existing = db.prepare("SELECT id FROM users WHERE username='admin'").get();
     if (existing) return res.send("Admin deja există!");
@@ -537,23 +414,20 @@ app.get("/setup-admin-x9k2", async (req, res) => {
 });
 
 // ── CLEAN URLs ──
-app.get('/login',              (req, res) => res.sendFile('bratva-login.html',     { root: 'public' }));
-app.get('/service-login',      (req, res) => res.sendFile('service-login.html',    { root: 'public' }));
-app.get('/dashboard',          (req, res) => res.sendFile('dashboard.html',        { root: 'public' }));
-app.get('/bratva-panel',       (req, res) => res.sendFile('bratva.html',           { root: 'public' }));
-app.get('/sputnik-panel',      (req, res) => res.sendFile('sputnik.html',          { root: 'public' }));
-app.get('/sputnik2-panel',     (req, res) => res.sendFile('sputnik2.html',         { root: 'public' }));
-app.get('/task',               (req, res) => res.sendFile('task.html',             { root: 'public' }));
-app.get('/calculator',         (req, res) => res.sendFile('calculator.html',       { root: 'public' }));
-app.get('/invoiri-panel',      (req, res) => res.sendFile('invoiri.html',          { root: 'public' }));
-app.get('/admin',              (req, res) => res.sendFile('admin.html',            { root: 'public' }));
-app.get('/service-panel',      (req, res) => res.sendFile('service-dashboard.html',{ root: 'public' }));
-app.get('/service-evidenta',   (req, res) => res.sendFile('service-evidenta.html', { root: 'public' }));
-app.get('/service-invoiri',    (req, res) => res.sendFile('service-invoiri.html',  { root: 'public' }));
-app.get('/service-admin',      (req, res) => res.sendFile('service-admin.html',    { root: 'public' }));
-app.get('/service-pontaje',    (req, res) => res.sendFile('service-pontaje.html',  { root: 'public' }));
-app.get('/amenzi',             (req, res) => res.sendFile('amenzi.html',           { root: 'public' }));
-app.get('/service-amenzi',     (req, res) => res.sendFile('service-amenzi.html',   { root: 'public' }));
+app.get('/login',           (req, res) => res.sendFile('bratva-login.html',     { root: 'public' }));
+app.get('/service-login',   (req, res) => res.sendFile('service-login.html',    { root: 'public' }));
+app.get('/dashboard',       (req, res) => res.sendFile('dashboard.html',        { root: 'public' }));
+app.get('/bratva-panel',    (req, res) => res.sendFile('bratva.html',           { root: 'public' }));
+app.get('/sputnik-panel',   (req, res) => res.sendFile('sputnik.html',          { root: 'public' }));
+app.get('/sputnik2-panel',  (req, res) => res.sendFile('sputnik2.html',         { root: 'public' }));
+app.get('/task',            (req, res) => res.sendFile('task.html',             { root: 'public' }));
+app.get('/calculator',      (req, res) => res.sendFile('calculator.html',       { root: 'public' }));
+app.get('/invoiri-panel',   (req, res) => res.sendFile('invoiri.html',          { root: 'public' }));
+app.get('/admin',           (req, res) => res.sendFile('admin.html',            { root: 'public' }));
+app.get('/service-panel',   (req, res) => res.sendFile('service-dashboard.html',{ root: 'public' }));
+app.get('/service-invoiri', (req, res) => res.sendFile('service-invoiri.html',  { root: 'public' }));
+app.get('/service-admin',   (req, res) => res.sendFile('service-admin.html',    { root: 'public' }));
+app.get('/service-pontaje', (req, res) => res.sendFile('service-pontaje.html',  { root: 'public' }));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => { console.log(`Server running on port ${PORT}`); });

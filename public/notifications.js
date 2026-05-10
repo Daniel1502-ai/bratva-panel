@@ -210,7 +210,14 @@ function renderList(){
   }
   list.innerHTML = notifications.map(n => {
     const cls = n.read ? 'read' : 'unread';
-    const href = n.taskId ? `task.html#task-${n.taskId}` : '#';
+    let href = '#';
+    if(n.amendaId) {
+      // Detect org from URL to route correctly
+      const isService = window.location.pathname.includes('service');
+      href = isService ? `service-amenzi.html#amenda-${n.amendaId}` : `/amenzi#amenda-${n.amendaId}`;
+    } else if(n.taskId) {
+      href = `task.html#task-${n.taskId}`;
+    }
     return `<a class="notif-item ${cls}" href="${href}" data-id="${n.id}">
       <div class="notif-dot"></div>
       <div class="notif-content">
