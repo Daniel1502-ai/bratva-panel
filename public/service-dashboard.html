@@ -113,9 +113,9 @@
     <span class="sb-brand-text">SERVICE</span>
   </div>
   <nav class="sb-nav">
-    <a href="service-dashboard.html" class="sb-link active"><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
-    <a href="service-invoiri.html" class="sb-link"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
-    <a href="service-admin.html" class="sb-link" id="adminLink" style="display:none"><span class="sb-icon">🛡</span><span class="sb-label">Admin</span></a>
+    <a href="/service" class="sb-link active"><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
+    <a href="/service-invoiri" class="sb-link"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
+    <a href="/service-admin" class="sb-link" id="adminLink" style="display:none"><span class="sb-icon">🛡</span><span class="sb-label">Admin</span></a>
     <a href="/" class="sb-link"><span class="sb-icon">↩</span><span class="sb-label">Schimbă</span></a>
   </nav>
   <div class="sb-bottom">
@@ -189,7 +189,7 @@ const grades = ["Manager","Mecanic Șef","Mecanic","Ucenic"];
 async function init(){
   const res = await fetch("/me");
   user = await res.json();
-  if(!user){ location.href="service-login.html"; return; }
+  if(!user){ location.href="/service-login"; return; }
   document.getElementById("navUsername").textContent = user.username;
   if(user.role && user.role.toLowerCase()==="leader"){
     const al = document.getElementById("adminLink");
@@ -319,7 +319,7 @@ document.addEventListener("click", (e)=>{
 
 async function logout(){
   await fetch("/logout",{method:"POST"}).catch(()=>{});
-  location.href="service-login.html";
+  location.href="/service-login";
 }
 
 init();

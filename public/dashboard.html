@@ -414,13 +414,13 @@
   </div>
 
   <nav class="sb-nav">
-    <a href="dashboard.html"  class="sb-link active"><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
-    <a href="bratva.html"     class="sb-link ">   <span class="sb-icon">🔱</span><span class="sb-label">Bratva</span></a>
-    <a href="sputnik.html"    class="sb-link ">  <span class="sb-icon">⚡</span><span class="sb-label">Sputnik</span></a>
-    <a href="task.html"       class="sb-link ">     <span class="sb-icon">📋</span><span class="sb-label">Task</span></a>
-    <a href="calculator.html" class="sb-link ">     <span class="sb-icon">💰</span><span class="sb-label">Calculator</span></a>
-    <a href="invoiri.html"   class="sb-link"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
-    <a href="admin.html"      class="sb-link " id="adminLink" style="display:none"><span class="sb-icon">🛡</span><span class="sb-label">Admin</span></a>
+    <a href="/dashboard"  class="sb-link active"><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
+    <a href="/bratva-panel"     class="sb-link ">   <span class="sb-icon">🔱</span><span class="sb-label">Bratva</span></a>
+    <a href="/sputnik-panel"    class="sb-link ">  <span class="sb-icon">⚡</span><span class="sb-label">Sputnik</span></a>
+    <a href="/task"       class="sb-link ">     <span class="sb-icon">📋</span><span class="sb-label">Task</span></a>
+    <a href="/calculator" class="sb-link ">     <span class="sb-icon">💰</span><span class="sb-label">Calculator</span></a>
+    <a href="/invoiri-panel"   class="sb-link"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
+    <a href="/admin"      class="sb-link " id="adminLink" style="display:none"><span class="sb-icon">🛡</span><span class="sb-label">Admin</span></a>
   </nav>
 
   <div class="sb-bottom">
@@ -471,7 +471,7 @@
 
 <div class="cards-grid">
 
-  <a class="card" href="bratva.html">
+  <a class="card" href="/bratva-panel">
     <div class="card-icon">🔱</div>
     <div class="card-title">Evidență Bratva</div>
     <div class="card-desc">Gestionează membrii Bratva, gradele, echipamentele și statusul fiecărui soldat.</div>
@@ -481,7 +481,7 @@
     </div>
   </a>
 
-  <a class="card" href="sputnik.html">
+  <a class="card" href="/sputnik-panel">
     <div class="card-icon">⚡</div>
     <div class="card-title">Evidență Sputnik</div>
     <div class="card-desc">Urmărește prezența, taskurile săptămânale și învoirile membrilor Sputnik.</div>
@@ -491,7 +491,7 @@
     </div>
   </a>
 
-  <a class="card" href="task.html">
+  <a class="card" href="/task">
     <div class="card-icon">📋</div>
     <div class="card-title">Task Avansare</div>
     <div class="card-desc">Publică și actualizează taskurile necesare pentru avansarea în grad a membrilor.</div>
@@ -501,7 +501,7 @@
     </div>
   </a>
 
-  <a class="card" href="calculator.html">
+  <a class="card" href="/calculator">
     <div class="card-icon">💰</div>
     <div class="card-title">Calculator Taxe</div>
     <div class="card-desc">Calculează totalul, taxa de 10% și bonusurile pentru Groove, El Burro și Vespucii.</div>
@@ -511,7 +511,7 @@
     </div>
   </a>
 
-  <a class="card" href="admin.html" id="adminCard" style="display:none">
+  <a class="card" href="/admin" id="adminCard" style="display:none">
     <div class="card-icon">🛡</div>
     <div class="card-title">Admin Panel</div>
     <div class="card-desc">Gestionează conturile membrilor, schimbă roluri și administrează accesul în panel.</div>
@@ -527,7 +527,7 @@
 async function init(){
   const res = await fetch("/me");
   const user = await res.json();
-  if(!user) { location.href="bratva-login.html"; return; }
+  if(!user) { location.href="/login"; return; }
 
   document.getElementById("navUsername").textContent = user.username;
   document.getElementById("statRole").textContent = user.role === "leader" ? "LEADER" : "MEMBER";
@@ -559,7 +559,7 @@ async function init(){
 
 async function logout(){
   await fetch("/logout", { method: "POST" }).catch(()=>{});
-  location.href="bratva-login.html";
+  location.href="/login";
 }
 
 init();

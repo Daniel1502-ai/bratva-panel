@@ -413,6 +413,20 @@ app.get("/setup-admin-x9k2", async (req, res) => {
     res.send("✓ Admin creat cu succes!");
 });
 
+// ── CLEAN URLs ──
+app.get('/login',           (req, res) => res.sendFile('bratva-login.html',     { root: 'public' }));
+app.get('/service-login',   (req, res) => res.sendFile('service-login.html',    { root: 'public' }));
+app.get('/dashboard',       (req, res) => res.sendFile('dashboard.html',        { root: 'public' }));
+app.get('/bratva-panel',    (req, res) => res.sendFile('bratva.html',           { root: 'public' }));
+app.get('/sputnik-panel',   (req, res) => res.sendFile('sputnik.html',          { root: 'public' }));
+app.get('/sputnik2-panel',  (req, res) => res.sendFile('sputnik2.html',         { root: 'public' }));
+app.get('/task',            (req, res) => res.sendFile('task.html',             { root: 'public' }));
+app.get('/calculator',      (req, res) => res.sendFile('calculator.html',       { root: 'public' }));
+app.get('/invoiri-panel',   (req, res) => res.sendFile('invoiri.html',          { root: 'public' }));
+app.get('/admin',           (req, res) => res.sendFile('admin.html',            { root: 'public' }));
+app.get('/service',         (req, res) => res.sendFile('service-dashboard.html',{ root: 'public' }));
+app.get('/service-invoiri', (req, res) => res.sendFile('service-invoiri.html',  { root: 'public' }));
+app.get('/service-admin',   (req, res) => res.sendFile('service-admin.html',    { root: 'public' }));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => { console.log(`Server running on port ${PORT}`); });

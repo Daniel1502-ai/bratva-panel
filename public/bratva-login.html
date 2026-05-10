@@ -278,7 +278,7 @@
 </style>
 </head>
 <body>
-<a class="back" href="/index.html">← Înapoi</a>
+<a class="back" href="/">← Înapoi</a>
 
 <div class="card">
 
@@ -367,7 +367,7 @@ async function login(){
   });
 
   if(res.ok){
-    location.href = 'dashboard.html';
+    location.href = '/dashboard';
   } else {
     const text = await res.text();
     err.textContent = '⚠ ' + (text || 'Date incorecte.');

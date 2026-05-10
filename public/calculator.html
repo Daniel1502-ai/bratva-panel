@@ -658,13 +658,13 @@
   </div>
 
   <nav class="sb-nav">
-    <a href="dashboard.html"  class="sb-link "><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
-    <a href="bratva.html"     class="sb-link ">   <span class="sb-icon">🔱</span><span class="sb-label">Bratva</span></a>
-    <a href="sputnik.html"    class="sb-link ">  <span class="sb-icon">⚡</span><span class="sb-label">Sputnik</span></a>
-    <a href="task.html"       class="sb-link ">     <span class="sb-icon">📋</span><span class="sb-label">Task</span></a>
-    <a href="calculator.html" class="sb-link active">     <span class="sb-icon">💰</span><span class="sb-label">Calculator</span></a>
-    <a href="invoiri.html"   class="sb-link"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
-    <a href="admin.html"      class="sb-link " id="adminLink" style="display:none"><span class="sb-icon">🛡</span><span class="sb-label">Admin</span></a>
+    <a href="/dashboard"  class="sb-link "><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
+    <a href="/bratva-panel"     class="sb-link ">   <span class="sb-icon">🔱</span><span class="sb-label">Bratva</span></a>
+    <a href="/sputnik-panel"    class="sb-link ">  <span class="sb-icon">⚡</span><span class="sb-label">Sputnik</span></a>
+    <a href="/task"       class="sb-link ">     <span class="sb-icon">📋</span><span class="sb-label">Task</span></a>
+    <a href="/calculator" class="sb-link active">     <span class="sb-icon">💰</span><span class="sb-label">Calculator</span></a>
+    <a href="/invoiri-panel"   class="sb-link"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
+    <a href="/admin"      class="sb-link " id="adminLink" style="display:none"><span class="sb-icon">🛡</span><span class="sb-label">Admin</span></a>
   </nav>
 
   <div class="sb-bottom">
@@ -1285,7 +1285,7 @@ async function init(){
 
 async function logout(){
   await fetch("/logout", { method: "POST" }).catch(()=>{});
-  location.href="bratva-login.html";
+  location.href="/login";
 }
 
 init();

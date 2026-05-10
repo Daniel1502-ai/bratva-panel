@@ -154,9 +154,9 @@
     <span class="sb-brand-text">SERVICE</span>
   </div>
   <nav class="sb-nav">
-    <a href="service-dashboard.html" class="sb-link"><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
-    <a href="service-invoiri.html" class="sb-link"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
-    <a href="service-admin.html" class="sb-link active" id="adminLink"><span class="sb-icon">🛡</span><span class="sb-label">Admin</span></a>
+    <a href="/service" class="sb-link"><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
+    <a href="/service-invoiri" class="sb-link"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
+    <a href="/service-admin" class="sb-link active" id="adminLink"><span class="sb-icon">🛡</span><span class="sb-label">Admin</span></a>
     <a href="/" class="sb-link"><span class="sb-icon">↩</span><span class="sb-label">Schimbă</span></a>
   </nav>
   <div class="sb-bottom">
@@ -220,8 +220,8 @@ let allUsers = [];
 async function init(){
   const res = await fetch("/me");
   currentUser = await res.json();
-  if(!currentUser){ location.href="service-login.html"; return; }
-  if(currentUser.role.toLowerCase() !== "leader"){ location.href = "service-dashboard.html"; return; }
+  if(!currentUser){ location.href="/service-login"; return; }
+  if(currentUser.role.toLowerCase() !== "leader"){ location.href = "/service"; return; }
   document.getElementById("navUsername").textContent = currentUser.username;
   await loadUsers();
 }
@@ -321,7 +321,7 @@ function showToast(msg, isError = false){
 
 async function logout(){
   await fetch("/logout", { method: "POST" }).catch(()=>{});
-  location.href="service-login.html";
+  location.href="/service-login";
 }
 
 init();

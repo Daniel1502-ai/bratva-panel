@@ -424,13 +424,13 @@
   </div>
 
   <nav class="sb-nav">
-    <a href="dashboard.html"  class="sb-link "><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
-    <a href="bratva.html"     class="sb-link ">   <span class="sb-icon">🔱</span><span class="sb-label">Bratva</span></a>
-    <a href="sputnik.html"    class="sb-link ">  <span class="sb-icon">⚡</span><span class="sb-label">Sputnik</span></a>
-    <a href="task.html"       class="sb-link ">     <span class="sb-icon">📋</span><span class="sb-label">Task</span></a>
-    <a href="calculator.html" class="sb-link ">     <span class="sb-icon">💰</span><span class="sb-label">Calculator</span></a>
-    <a href="invoiri.html"   class="sb-link"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
-    <a href="admin.html"      class="sb-link active" id="adminLink" style="display:none"><span class="sb-icon">🛡</span><span class="sb-label">Admin</span></a>
+    <a href="/dashboard"  class="sb-link "><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
+    <a href="/bratva-panel"     class="sb-link ">   <span class="sb-icon">🔱</span><span class="sb-label">Bratva</span></a>
+    <a href="/sputnik-panel"    class="sb-link ">  <span class="sb-icon">⚡</span><span class="sb-label">Sputnik</span></a>
+    <a href="/task"       class="sb-link ">     <span class="sb-icon">📋</span><span class="sb-label">Task</span></a>
+    <a href="/calculator" class="sb-link ">     <span class="sb-icon">💰</span><span class="sb-label">Calculator</span></a>
+    <a href="/invoiri-panel"   class="sb-link"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
+    <a href="/admin"      class="sb-link active" id="adminLink" style="display:none"><span class="sb-icon">🛡</span><span class="sb-label">Admin</span></a>
   </nav>
 
   <div class="sb-bottom">
@@ -503,8 +503,8 @@ let allUsers = [];
 async function init(){
   const res = await fetch("/me");
   currentUser = await res.json();
-  if(!currentUser){ location.href="bratva-login.html"; return; }
-  if(currentUser.role.toLowerCase() !== "leader"){ location.href = "dashboard.html"; return; }
+  if(!currentUser){ location.href="/login"; return; }
+  if(currentUser.role.toLowerCase() !== "leader"){ location.href = "/dashboard"; return; }
   document.getElementById("navUsername").textContent = currentUser.username;
   await loadUsers();
 }
@@ -625,7 +625,7 @@ function showToast(msg, isError = false){
 
 async function logout(){
   await fetch("/logout", { method: "POST" }).catch(()=>{});
-  location.href="bratva-login.html";
+  location.href="/login";
 }
 
 init();
