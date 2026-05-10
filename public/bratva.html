@@ -494,13 +494,13 @@
   </div>
 
   <nav class="sb-nav">
-    <a href="dashboard.html"  class="sb-link "><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
-    <a href="bratva.html"     class="sb-link active">   <span class="sb-icon">🔱</span><span class="sb-label">Bratva</span></a>
-    <a href="sputnik.html"    class="sb-link ">  <span class="sb-icon">⚡</span><span class="sb-label">Sputnik</span></a>
-    <a href="task.html"       class="sb-link ">     <span class="sb-icon">📋</span><span class="sb-label">Task</span></a>
-    <a href="calculator.html" class="sb-link ">     <span class="sb-icon">💰</span><span class="sb-label">Calculator</span></a>
-    <a href="invoiri.html"   class="sb-link"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
-    <a href="admin.html"      class="sb-link " id="adminLink" style="display:none"><span class="sb-icon">🛡</span><span class="sb-label">Admin</span></a>
+    <a href="/dashboard"  class="sb-link "><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
+    <a href="/bratva"     class="sb-link active">   <span class="sb-icon">🔱</span><span class="sb-label">Bratva</span></a>
+    <a href="/sputnik"    class="sb-link ">  <span class="sb-icon">⚡</span><span class="sb-label">Sputnik</span></a>
+    <a href="/task"       class="sb-link ">     <span class="sb-icon">📋</span><span class="sb-label">Task</span></a>
+    <a href="/calculator" class="sb-link ">     <span class="sb-icon">💰</span><span class="sb-label">Calculator</span></a>
+    <a href="/invoiri"   class="sb-link"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
+    <a href="/admin"      class="sb-link " id="adminLink" style="display:none"><span class="sb-icon">🛡</span><span class="sb-label">Admin</span></a>
   </nav>
 
   <div class="sb-bottom">
@@ -560,12 +560,30 @@ const grades = ["Pakhan","Spetsnaz","Sovetink","Brigadir","Obshchak","Vor v Zako
 async function init(){
   const res = await fetch("/me");
   user = await res.json();
-  if(!user){ location.href="bratva-login.html"; return; }
+  if(!user){ location.href="/login"; return; }
   document.getElementById("navUsername").textContent = user.username;
   if(user.role && user.role.toLowerCase() === "leader"){
     document.getElementById("adminLink").style.display = "";
   }
   load();
+}
+
+function sortByGrade(data){
+  // grades[0] = cel mai mare grad
+  return [...data].sort((a, b) => {
+    const hasA = a.nume && a.nume.trim() !== "";
+    const hasB = b.nume && b.nume.trim() !== "";
+    // Rândurile goale merg la sfârșit
+    if(!hasA && !hasB) return 0;
+    if(!hasA) return 1;
+    if(!hasB) return -1;
+    // Sortare după grad (indexul mai mic = grad mai mare)
+    const iA = grades.indexOf(a.grad);
+    const iB = grades.indexOf(b.grad);
+    const rankA = iA === -1 ? grades.length : iA;
+    const rankB = iB === -1 ? grades.length : iB;
+    return rankA - rankB;
+  });
 }
 
 function createRows(data=[]){
@@ -574,8 +592,14 @@ function createRows(data=[]){
 
   const isLeader = user.role === "leader";
 
+  // Păstrăm exact 35 de sloturi, sortăm ce e completat
+  const filled = data.filter(d => d.nume && d.nume.trim() !== "");
+  const empty  = data.filter(d => !d.nume || d.nume.trim() === "");
+  const sorted = [...sortByGrade(filled), ...empty];
+  while(sorted.length < 35) sorted.push({});
+
   for(let i=0;i<35;i++){
-    const d = data[i]||{};
+    const d = sorted[i]||{};
 
     if(isLeader){
       const makeCheck = (val) => `
@@ -624,11 +648,39 @@ function createRows(data=[]){
         wrap.querySelector(".check-icon").textContent = cb.checked ? "✓" : "";
       });
     });
+
+    // Re-sort live când se schimbă gradul
+    document.querySelectorAll("select.grade-select").forEach(sel=>{
+      sel.addEventListener("change", ()=> {
+        const data = collectData();
+        createRows(data);
+      });
+    });
   }
 
   if(!isLeader){
     document.getElementById("saveBtn").style.display="none";
   }
+}
+
+function collectData(){
+  const rows = document.querySelectorAll("#tableBody tr");
+  const data = [];
+  rows.forEach(r=>{
+    const inputs = r.querySelectorAll("input:not([type='checkbox']), select");
+    const checks = r.querySelectorAll("input[type='checkbox']");
+    data.push({
+      nume: inputs[0].value,
+      cnp: inputs[1].value,
+      telefon: inputs[2].value,
+      masca: checks[0]?.checked||false,
+      bandana: checks[1]?.checked||false,
+      manusa: checks[2]?.checked||false,
+      sindicat: checks[3]?.checked||false,
+      grad: inputs[3].value
+    });
+  });
+  return data;
 }
 
 async function load(){
@@ -638,24 +690,7 @@ async function load(){
 }
 
 async function save(){
-  const rows = document.querySelectorAll("#tableBody tr");
-  const data = [];
-
-  rows.forEach(r=>{
-    const inputs = r.querySelectorAll("input:not([type='checkbox']), select");
-    const checks = r.querySelectorAll("input[type='checkbox']");
-    data.push({
-      nume: inputs[0].value,
-      cnp: inputs[1].value,
-      telefon: inputs[2].value,
-      masca: checks[0].checked,
-      bandana: checks[1].checked,
-      manusa: checks[2].checked,
-      sindicat: checks[3].checked,
-      grad: inputs[3].value
-    });
-  });
-
+  const data = collectData();
   await fetch("/bratva",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
   showToast();
 }
@@ -668,7 +703,7 @@ function showToast(){
 
 async function logout(){
   await fetch("/logout",{method:"POST"}).catch(()=>{});
-  location.href="bratva-login.html";
+  location.href="/login";
 }
 
 init();
