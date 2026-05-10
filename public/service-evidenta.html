@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<title>Service Panel — Evidență</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#2477c9; --blue-bright:#4aa3ff; --blue-glow:rgba(36,119,201,.5);
+    --dark:#070a0f; --dark2:#0f141b; --dark3:#161d27; --dark4:#1e2731;
+    --border:#1f2a36; --border2:#2a3949; --text:#e8eef5; --muted:#6a7584;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:'Rajdhani',sans-serif;background:var(--dark);color:var(--text);min-height:100vh;
+    background-image:
+      linear-gradient(rgba(7,10,15,.85),rgba(7,10,15,.92)),
+      url("https://i.imgur.com/7YqgLz2.jpeg");
+    background-size:cover;background-position:center;background-attachment:fixed;
+    display:flex;
+  }
+  :root { --sb-collapsed:64px; --sb-expanded:220px; }
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sb-collapsed);background:rgba(15,20,27,.96);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:200;transition:width .28s cubic-bezier(.4,0,.2,1);overflow:hidden;backdrop-filter:blur(8px)}
+  .sidebar:hover{width:var(--sb-expanded)}
+  .sb-brand{height:64px;display:flex;align-items:center;padding:0 18px;gap:14px;border-bottom:1px solid var(--border);overflow:hidden;white-space:nowrap}
+  .sb-brand-icon{font-size:22px;color:var(--blue-bright);text-shadow:0 0 20px var(--blue-glow);width:28px;text-align:center}
+  .sb-brand-text{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:4px;color:var(--blue-bright);text-shadow:0 0 20px var(--blue-glow);opacity:0;transition:opacity .2s .05s}
+  .sidebar:hover .sb-brand-text{opacity:1}
+  .sb-nav{flex:1;display:flex;flex-direction:column;padding:10px 0;gap:2px;overflow:hidden}
+  .sb-link{display:flex;align-items:center;gap:14px;padding:0 18px;height:44px;text-decoration:none;color:var(--muted);font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;white-space:nowrap;transition:.15s;border-left:2px solid transparent}
+  .sb-link:hover{color:var(--text);background:rgba(255,255,255,.04)}
+  .sb-link.active{color:var(--text);background:rgba(36,119,201,.12);border-left-color:var(--blue-bright)}
+  .sb-icon{font-size:18px;width:28px;text-align:center}
+  .sb-label{opacity:0;transition:opacity .18s .06s}
+  .sidebar:hover .sb-label{opacity:1}
+  .sb-bottom{border-top:1px solid var(--border);padding:12px 0;display:flex;flex-direction:column;gap:4px;overflow:hidden}
+  .sb-user{display:flex;align-items:center;gap:14px;padding:6px 18px;white-space:nowrap;overflow:hidden}
+  .sb-user-icon{font-size:16px;width:28px;text-align:center;color:var(--muted)}
+  .sb-user-info{display:flex;flex-direction:column;gap:1px;opacity:0;transition:opacity .18s .06s}
+  .sidebar:hover .sb-user-info{opacity:1}
+  .sb-user-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+  .sb-username{font-weight:700;font-size:14px;color:var(--text);max-width:130px;overflow:hidden;text-overflow:ellipsis}
+  .sb-logout{display:flex;align-items:center;gap:14px;padding:0 18px;height:40px;background:transparent;color:var(--blue-bright);border:none;cursor:pointer;font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;width:100%;text-align:left;font-family:'Rajdhani',sans-serif}
+  .sb-logout:hover{background:rgba(36,119,201,.18);color:#fff}
+  .sb-logout-icon{font-size:16px;width:28px;text-align:center}
+  .sb-logout-label{opacity:0;transition:opacity .18s .06s}
+  .sidebar:hover .sb-logout-label{opacity:1}
+
+  .main-content{margin-left:var(--sb-collapsed);flex:1;min-width:0;transition:margin-left .28s}
+  .hero{padding:60px 36px 20px;display:flex;flex-direction:column;gap:6px;position:relative}
+  .hero-label{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--blue-bright)}
+  .hero-title{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:6px;line-height:1}
+  .hero-sub{font-size:14px;letter-spacing:1px;color:var(--muted);margin-top:4px}
+
+  /* ── NOTIFICATIONS BELL ── */
+  .notif-wrap{position:absolute;top:24px;right:36px;}
+  .notif-btn{position:relative;background:rgba(15,20,27,.85);border:1px solid var(--border2);color:var(--text);width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;transition:.2s;backdrop-filter:blur(6px)}
+  .notif-btn:hover{border-color:var(--blue);box-shadow:0 0 16px var(--blue-glow);color:var(--blue-bright)}
+  .notif-badge{position:absolute;top:-4px;right:-4px;background:#e74c3c;color:#fff;font-size:11px;font-weight:700;min-width:20px;height:20px;border-radius:10px;display:none;align-items:center;justify-content:center;padding:0 5px;box-shadow:0 0 8px rgba(231,76,60,.6)}
+  .notif-badge.show{display:flex}
+  .notif-panel{position:absolute;top:54px;right:0;width:360px;max-height:480px;background:rgba(15,20,27,.98);border:1px solid var(--border2);border-radius:6px;box-shadow:0 16px 48px rgba(0,0,0,.6);overflow:hidden;display:none;z-index:300;backdrop-filter:blur(10px)}
+  .notif-panel.show{display:flex;flex-direction:column}
+  .notif-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--dark3)}
+  .notif-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:3px;color:var(--blue-bright)}
+  .notif-mark{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;transition:.15s}
+  .notif-mark:hover{color:var(--blue-bright)}
+  .notif-list{overflow-y:auto;max-height:420px}
+  .notif-list::-webkit-scrollbar{width:6px}
+  .notif-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+  .notif-item{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:4px;cursor:pointer;transition:.15s}
+  .notif-item:hover{background:rgba(255,255,255,.025)}
+  .notif-item.unread{background:rgba(36,119,201,.08);border-left:2px solid var(--blue-bright)}
+  .notif-msg{font-size:13px;font-weight:500;color:var(--text);line-height:1.4}
+  .notif-time{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+  .notif-empty{padding:36px 18px;text-align:center;color:var(--muted);font-size:13px}
+
+  .page-header{display:flex;justify-content:space-between;align-items:flex-end;padding:0 36px;margin:24px 0 20px}
+  .btn-save{font-weight:700;font-size:13px;letter-spacing:2px;text-transform:uppercase;background:var(--blue);color:#fff;border:none;padding:12px 28px;border-radius:3px;cursor:pointer;font-family:'Rajdhani',sans-serif;transition:.2s}
+  .btn-save:hover{background:var(--blue-bright);box-shadow:0 0 20px var(--blue-glow);transform:translateY(-1px)}
+
+  .table-wrap{margin:0 36px 48px;border:1px solid var(--border);border-radius:4px;overflow:hidden;background:rgba(15,20,27,.85);backdrop-filter:blur(6px)}
+  .table-wrap table{width:100%;border-collapse:collapse}
+  .table-wrap thead tr{background:var(--dark3);border-bottom:1px solid var(--border2)}
+  .table-wrap th{font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:14px 16px;text-align:left}
+  .table-wrap th:first-child{padding-left:20px}
+  .table-wrap tbody tr{border-bottom:1px solid var(--border);transition:background .15s}
+  .table-wrap tbody tr:hover{background:rgba(255,255,255,.025)}
+  .row-num{font-size:11px;color:var(--muted);font-weight:600;padding:10px 8px 10px 20px!important;width:36px}
+  .table-wrap td{padding:8px 16px;vertical-align:middle}
+  .table-wrap input,.table-wrap select{font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:500;background:transparent;color:var(--text);border:1px solid transparent;border-radius:3px;padding:6px 10px;width:100%;outline:none;transition:.15s}
+  .table-wrap input:focus,.table-wrap select:focus{background:var(--dark4);border-color:var(--border2)}
+  .table-wrap input:hover,.table-wrap select:hover{background:var(--dark3);border-color:var(--border)}
+  .grade-select{font-weight:700!important;font-size:12px!important;letter-spacing:1px;text-transform:uppercase;color:var(--blue-bright)!important;cursor:pointer}
+  .cell-text{font-size:14px;font-weight:500;color:var(--text);padding:6px 10px;display:block}
+  .cell-text.muted{color:var(--muted)}
+  .grade-text{font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--blue-bright);padding:6px 10px;display:block}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:3px 9px;border-radius:2px;border:1px solid;}
+  .pill.yes{background:rgba(243,156,18,0.12);border-color:#f39c12;color:#f39c12;}
+  .pill.no{background:rgba(36,119,201,0.12);border-color:var(--blue);color:var(--blue-bright);}
+  .toast{position:fixed;bottom:28px;right:28px;background:var(--dark3);border:1px solid var(--blue);color:#fff;font-weight:600;font-size:14px;letter-spacing:1px;padding:14px 24px;border-radius:4px;box-shadow:0 8px 32px rgba(0,0,0,.5),0 0 20px var(--blue-glow);transform:translateY(80px);opacity:0;transition:.3s;z-index:999}
+  .toast.show{transform:translateY(0);opacity:1}
+
+  .header-section{padding:0 36px;margin-bottom:20px;display:flex;align-items:center;gap:16px}
+  .header-section span{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted)}
+  .header-section::after{content:'';flex:1;height:1px;background:var(--border)}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sb-brand">
+    <span class="sb-brand-icon">⚙</span>
+    <span class="sb-brand-text">SERVICE</span>
+  </div>
+  <nav class="sb-nav">
+    <a href="service-dashboard.html" class="sb-link"><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
+    <a href="service-evidenta.html"  class="sb-link active"><span class="sb-icon">🔧</span><span class="sb-label">Service</span></a>
+    <a href="service-invoiri.html" class="sb-link"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
+    <a href="service-pontaje.html" class="sb-link" id="pontajeLink"><span class="sb-icon">💰</span><span class="sb-label">Pontaje</span></a>
+    <a href="service-admin.html" class="sb-link" id="adminLink" style="display:none"><span class="sb-icon">🛡</span><span class="sb-label">Admin</span></a>
+    
+  </nav>
+  <div class="sb-bottom">
+    <div class="sb-user">
+      <span class="sb-user-icon">👤</span>
+      <div class="sb-user-info">
+        <span class="sb-user-label">Conectat ca</span>
+        <span class="sb-username" id="navUsername">—</span>
+      </div>
+    </div>
+    <button class="sb-logout" onclick="logout()">
+      <span class="sb-logout-icon">⏻</span>
+      <span class="sb-logout-label">Logout</span>
+    </button>
+  </div>
+</aside>
+
+<div class="main-content">
+
+<div class="hero">
+  <div class="hero-label">Evidență Personal</div>
+  <div class="hero-title">🔧 Evidență Service</div>
+  <div class="hero-sub">Tabel complet cu personalul Service, grade și pontaje.</div>
+
+  <div class="notif-wrap">
+    <button class="notif-btn" onclick="toggleNotif(event)">
+      🔔
+      <span class="notif-badge" id="notifBadge">0</span>
+    </button>
+    <div class="notif-panel" id="notifPanel">
+      <div class="notif-head">
+        <div class="notif-title">Notificări</div>
+        <button class="notif-mark" onclick="markAllRead()">Marchează tot</button>
+      </div>
+      <div class="notif-list" id="notifList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="header-section"><span>Personal</span></div>
+
+<div class="page-header">
+  <div></div>
+  <button class="btn-save" id="saveBtn" onclick="save()">💾 Salvează</button>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Nume</th>
+        <th>CNP</th>
+        <th>Grad</th>
+        <th>Pontaj</th>
+        <th>Învoire</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<div class="toast" id="toast">✓ Date salvate cu succes</div>
+
+</div>
+
+<script>
+let user;
+const grades = ["Manager","Mecanic Șef","Mecanic","Ucenic"];
+
+async function init(){
+  const res = await fetch("/me");
+  user = await res.json();
+  if(!user){ location.href="service-login.html"; return; }
+  document.getElementById("navUsername").textContent = user.username;
+  if(user.role && user.role.toLowerCase()==="leader"){
+    const al = document.getElementById("adminLink");
+    if(al) al.style.display = "";
+  }
+  load();
+  loadNotifCount();
+  setInterval(loadNotifCount, 30000);
+}
+
+function createRows(data=[]){
+  const tbody = document.getElementById("tableBody");
+  const isLeader = user.role === "leader";
+  let html = "";
+  for(let i=0;i<25;i++){
+    const d = data[i]||{};
+    const inv = d.invoire==='Da'
+      ? `<span class="pill yes">Da</span>`
+      : `<span class="pill no">Nu</span>`;
+    if(isLeader){
+      html += `<tr>
+        <td class="row-num">${i+1}</td>
+        <td><input value="${d.nume||""}" placeholder="—"></td>
+        <td><input value="${d.cnp||""}" placeholder="—"></td>
+        <td><select class="grade-select">${grades.map(g=>`<option ${d.grad===g?"selected":""}>${g}</option>`).join("")}</select></td>
+        <td><input value="${d.pontaj||""}" placeholder="—"></td>
+        <td>${inv}</td>
+      </tr>`;
+    } else {
+      const sv = (v) => `<span class="cell-text ${v?"":"muted"}">${v||"—"}</span>`;
+      html += `<tr>
+        <td class="row-num">${i+1}</td>
+        <td>${sv(d.nume)}</td>
+        <td>${sv(d.cnp)}</td>
+        <td><span class="grade-text">${d.grad||grades[0]}</span></td>
+        <td>${sv(d.pontaj)}</td>
+        <td>${inv}</td>
+      </tr>`;
+    }
+  }
+  tbody.innerHTML = html;
+  if(!isLeader) document.getElementById("saveBtn").style.display="none";
+}
+
+async function load(){
+  const res = await fetch("/service");
+  const data = await res.json();
+  createRows(data);
+}
+
+async function save(){
+  const rows = document.querySelectorAll("#tableBody tr");
+  const data = [];
+  rows.forEach(r=>{
+    const inputs = r.querySelectorAll("input");
+    const selects = r.querySelectorAll("select");
+    data.push({
+      nume: inputs[0].value,
+      cnp: inputs[1].value,
+      grad: selects[0].value,
+      pontaj: inputs[2].value
+    });
+  });
+  await fetch("/service",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+  const t = document.getElementById("toast");
+  t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"), 3000);
+}
+
+/* ── NOTIFICATIONS ── */
+async function loadNotifCount(){
+  try{
+    const r = await fetch("/notifications/count");
+    const j = await r.json();
+    const b = document.getElementById("notifBadge");
+    if(j.count>0){ b.textContent = j.count>99?"99+":j.count; b.classList.add("show"); }
+    else b.classList.remove("show");
+  }catch(e){}
+}
+
+async function loadNotifList(){
+  const list = document.getElementById("notifList");
+  list.innerHTML = `<div class="notif-empty">Se încarcă...</div>`;
+  try{
+    const r = await fetch("/notifications");
+    const items = await r.json();
+    if(!items.length){ list.innerHTML = `<div class="notif-empty">Nicio notificare.</div>`; return; }
+    list.innerHTML = items.map(n=>{
+      const time = new Date((n.createdAt||"").replace(' ','T')+"Z").toLocaleString('ro-RO');
+      return `<div class="notif-item ${n.read?'':'unread'}" onclick="markRead(${n.id}, this)">
+        <div class="notif-msg">${escapeHtml(n.message)}</div>
+        <div class="notif-time">${time}</div>
+      </div>`;
+    }).join("");
+  }catch(e){ list.innerHTML = `<div class="notif-empty">Eroare la încărcare.</div>`; }
+}
+
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function markRead(id, el){
+  if(el && el.classList.contains('unread')){
+    el.classList.remove('unread');
+    await fetch(`/notifications/${id}/read`, {method:"PATCH"}).catch(()=>{});
+    loadNotifCount();
+  }
+}
+
+async function markAllRead(){
+  await fetch("/notifications/read-all", {method:"POST"}).catch(()=>{});
+  document.querySelectorAll(".notif-item.unread").forEach(e=>e.classList.remove('unread'));
+  loadNotifCount();
+}
+
+function toggleNotif(ev){
+  ev.stopPropagation();
+  const p = document.getElementById("notifPanel");
+  const open = p.classList.toggle("show");
+  if(open) loadNotifList();
+}
+
+document.addEventListener("click", (e)=>{
+  const w = document.querySelector(".notif-wrap");
+  if(w && !w.contains(e.target)){
+    document.getElementById("notifPanel").classList.remove("show");
+  }
+});
+
+async function logout(){
+  await fetch("/logout",{method:"POST"}).catch(()=>{});
+  location.href="service-login.html";
+}
+
+init();
+</script>
+</body>
+</html>

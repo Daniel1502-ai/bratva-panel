@@ -82,6 +82,7 @@ db.exec(`CREATE TABLE IF NOT EXISTS service (
 try { db.exec(`ALTER TABLE service ADD COLUMN cnp TEXT`); } catch {}
 try { db.exec(`ALTER TABLE invoiri ADD COLUMN org TEXT DEFAULT 'bratva'`); } catch {}
 try { db.exec(`ALTER TABLE invoiri ADD COLUMN ora TEXT DEFAULT NULL`); } catch {}
+try { db.exec(`ALTER TABLE notifications ADD COLUMN org TEXT DEFAULT 'bratva'`); } catch {}
 
 // ---------- AUTO-EXPIRY ----------
 function checkExpiredTasks() {
@@ -93,19 +94,19 @@ function checkExpiredTasks() {
     if (!expiredTasks.length) return;
 
     const updateTask = db.prepare(`UPDATE tasks SET status='expirat' WHERE id=?`);
-    const insertNotif = db.prepare(`INSERT INTO notifications (userId,taskId,message) VALUES (?,?,?)`);
-    const getUserByName = db.prepare(`SELECT id FROM users WHERE username=?`);
+    const insertNotif = db.prepare(`INSERT INTO notifications (userId,taskId,message,org) VALUES (?,?,?,?)`);
+    const getUserByName = db.prepare(`SELECT id,org FROM users WHERE username=?`);
     const getAllUsers = db.prepare(`SELECT id FROM users`).all.bind(db.prepare(`SELECT id FROM users`));
 
     for (const task of expiredTasks) {
         updateTask.run(task.id);
         if (task.assignedTo && task.assignedTo !== 'all') {
             const u = getUserByName.get(task.assignedTo);
-            if (u) insertNotif.run(u.id, task.id, `⏰ Taskul "${task.title}" a expirat!`);
+            if (u) insertNotif.run(u.id, task.id, `⏰ Taskul "${task.title}" a expirat!`, u.org || 'bratva');
         } else {
-            const users = db.prepare(`SELECT id FROM users`).all();
+            const users = db.prepare(`SELECT id,COALESCE(org,'bratva') as org FROM users`).all();
             for (const u of users) {
-                insertNotif.run(u.id, task.id, `⏰ Taskul "${task.title}" a expirat!`);
+                insertNotif.run(u.id, task.id, `⏰ Taskul "${task.title}" a expirat!`, u.org || 'bratva');
             }
         }
     }
@@ -279,14 +280,15 @@ app.post("/tasks", requireRole("leader"), (req, res) => {
 
     const taskId = result.lastInsertRowid;
     const assigned = assignedTo || 'all';
-    const insertNotif = db.prepare(`INSERT INTO notifications (userId,taskId,message) VALUES (?,?,?)`);
+    const userOrg = (req.session.user.org || 'bratva').toLowerCase();
+    const insertNotif = db.prepare(`INSERT INTO notifications (userId,taskId,message,org) VALUES (?,?,?,?)`);
 
     if (assigned !== 'all') {
         const u = db.prepare(`SELECT id FROM users WHERE username=?`).get(assigned);
-        if (u) insertNotif.run(u.id, taskId, `📋 Ai primit un task nou: "${title}"`);
+        if (u) insertNotif.run(u.id, taskId, `📋 Ai primit un task nou: "${title}"`, userOrg);
     } else {
-        const users = db.prepare(`SELECT id FROM users`).all();
-        for (const u of users) insertNotif.run(u.id, taskId, `📋 Task nou pentru toți: "${title}"`);
+        const users = db.prepare(`SELECT id FROM users WHERE COALESCE(org,'bratva')=?`).all(userOrg);
+        for (const u of users) insertNotif.run(u.id, taskId, `📋 Task nou pentru toți: "${title}"`, userOrg);
     }
     res.json({ id: taskId });
 });
@@ -304,28 +306,33 @@ app.delete("/tasks/:id", requireRole("leader"), (req, res) => {
 
 // ---------- NOTIFICATIONS ----------
 app.get("/notifications/count", requireAuth, (req, res) => {
-    const row = db.prepare(`SELECT COUNT(*) as count FROM notifications WHERE userId=? AND read=0`).get(req.session.user.id);
+    const userOrg = (req.session.user.org || 'bratva').toLowerCase();
+    const row = db.prepare(`SELECT COUNT(*) as count FROM notifications WHERE userId=? AND read=0 AND COALESCE(org,'bratva')=?`).get(req.session.user.id, userOrg);
     res.json({ count: row ? row.count : 0 });
 });
 
 app.get("/notifications", requireAuth, (req, res) => {
-    const rows = db.prepare(`SELECT * FROM notifications WHERE userId=? ORDER BY createdAt DESC LIMIT 30`).all(req.session.user.id);
+    const userOrg = (req.session.user.org || 'bratva').toLowerCase();
+    const rows = db.prepare(`SELECT * FROM notifications WHERE userId=? AND COALESCE(org,'bratva')=? ORDER BY createdAt DESC LIMIT 30`).all(req.session.user.id, userOrg);
     res.json(rows);
 });
 
 app.patch("/notifications/:id/read", requireAuth, (req, res) => {
-    db.prepare(`UPDATE notifications SET read=1 WHERE id=? AND userId=?`).run(req.params.id, req.session.user.id);
+    const userOrg = (req.session.user.org || 'bratva').toLowerCase();
+    db.prepare(`UPDATE notifications SET read=1 WHERE id=? AND userId=? AND COALESCE(org,'bratva')=?`).run(req.params.id, req.session.user.id, userOrg);
     res.send("OK");
 });
 
 app.post("/notifications/read-all", requireAuth, (req, res) => {
-    db.prepare(`UPDATE notifications SET read=1 WHERE userId=?`).run(req.session.user.id);
+    const userOrg = (req.session.user.org || 'bratva').toLowerCase();
+    db.prepare(`UPDATE notifications SET read=1 WHERE userId=? AND COALESCE(org,'bratva')=?`).run(req.session.user.id, userOrg);
     res.send("OK");
 });
 
 // ---------- ADMIN ----------
 app.get("/admin/users", requireRole("leader"), (req, res) => {
-    res.json(db.prepare("SELECT id,username,role,cnp FROM users ORDER BY id ASC").all());
+    const userOrg = (req.session.user.org || 'bratva').toLowerCase();
+    res.json(db.prepare("SELECT id,username,role,cnp FROM users WHERE COALESCE(org,'bratva')=? ORDER BY id ASC").all(userOrg));
 });
 
 app.patch("/admin/users/:id/role", requireRole("leader"), (req, res) => {
@@ -385,9 +392,9 @@ app.post("/invoiri", requireAuth, async (req, res) => {
     const leaders = db.prepare(
         `SELECT id FROM users WHERE LOWER(role)='leader' AND (COALESCE(org,'bratva')=? OR username='admin')`
     ).all(userOrg);
-    const insertNotif = db.prepare(`INSERT INTO notifications (userId,taskId,message) VALUES (?,?,?)`);
+    const insertNotif = db.prepare(`INSERT INTO notifications (userId,taskId,message,org) VALUES (?,?,?,?)`);
     for (const l of leaders) {
-        insertNotif.run(l.id, null, `📅 ${nume} a postat o învoire (${startDate} → ${endDate})`);
+        insertNotif.run(l.id, null, `📅 ${nume} a postat o învoire (${startDate} → ${endDate})`, userOrg);
     }
 
     res.json({ id: result.lastInsertRowid, endDate });
@@ -425,6 +432,7 @@ app.get('/calculator',      (req, res) => res.sendFile('calculator.html',       
 app.get('/invoiri-panel',   (req, res) => res.sendFile('invoiri.html',          { root: 'public' }));
 app.get('/admin',           (req, res) => res.sendFile('admin.html',            { root: 'public' }));
 app.get('/service-panel',   (req, res) => res.sendFile('service-dashboard.html',{ root: 'public' }));
+app.get('/service-evidenta',(req, res) => res.sendFile('service-evidenta.html', { root: 'public' }));
 app.get('/service-invoiri', (req, res) => res.sendFile('service-invoiri.html',  { root: 'public' }));
 app.get('/service-admin',   (req, res) => res.sendFile('service-admin.html',    { root: 'public' }));
 app.get('/service-pontaje', (req, res) => res.sendFile('service-pontaje.html',  { root: 'public' }));
