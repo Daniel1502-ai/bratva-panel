@@ -424,7 +424,7 @@ app.get('/task',            (req, res) => res.sendFile('task.html',             
 app.get('/calculator',      (req, res) => res.sendFile('calculator.html',       { root: 'public' }));
 app.get('/invoiri-panel',   (req, res) => res.sendFile('invoiri.html',          { root: 'public' }));
 app.get('/admin',           (req, res) => res.sendFile('admin.html',            { root: 'public' }));
-app.get('/service',         (req, res) => res.sendFile('service-dashboard.html',{ root: 'public' }));
+app.get('/service-panel',   (req, res) => res.sendFile('service-dashboard.html',{ root: 'public' }));
 app.get('/service-invoiri', (req, res) => res.sendFile('service-invoiri.html',  { root: 'public' }));
 app.get('/service-admin',   (req, res) => res.sendFile('service-admin.html',    { root: 'public' }));
 

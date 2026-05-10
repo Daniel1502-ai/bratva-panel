@@ -101,8 +101,8 @@
 <aside class="sidebar">
   <div class="sb-brand"><span class="sb-brand-icon">⚙</span><span class="sb-brand-text">SERVICE</span></div>
   <nav class="sb-nav">
-    <a href="/service" class="sb-link"><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
-    <a href="/service-invoiri"   class="sb-link active"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
+    <a href="service-dashboard.html" class="sb-link"><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
+    <a href="service-invoiri.html"   class="sb-link active"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
     <a href="/" class="sb-link"><span class="sb-icon">↩</span><span class="sb-label">Schimbă</span></a>
   </nav>
   <div class="sb-bottom">
@@ -159,7 +159,7 @@ function recalcEnd(){
 
 async function init(){
   const r=await fetch("/me"); user=await r.json();
-  if(!user){ location.href="/service-login"; return; }
+  if(!user){ location.href="service-login.html"; return; }
   document.getElementById("navUsername").textContent=user.username;
   document.getElementById("fStart").value = todayStr();
   document.getElementById("fStart").addEventListener("input",recalcEnd);
@@ -223,7 +223,7 @@ function showToast(msg){
   setTimeout(()=>t.classList.remove("show"),2500);
 }
 
-async function logout(){ await fetch("/logout",{method:"POST"}).catch(()=>{}); location.href="/service-login"; }
+async function logout(){ await fetch("/logout",{method:"POST"}).catch(()=>{}); location.href="service-login.html"; }
 init();
 </script>
 <script src="notifications.js"></script>

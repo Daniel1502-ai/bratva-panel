@@ -15,7 +15,7 @@
     font-family:'Rajdhani',sans-serif; min-height:100vh;
     display:flex; align-items:center; justify-content:center;
     background:var(--dark);
-    background-image:linear-gradient(rgba(0,0,0,.72),rgba(0,0,0,.72)), url("servicepoza.jpg");
+    background-image:linear-gradient(rgba(0,0,0,.72),rgba(0,0,0,.72)), url("https://i.imgur.com/7YqgLz2.jpeg");
     background-size:cover; background-position:center; background-attachment:fixed;
     color:var(--text);
   }
@@ -73,7 +73,7 @@
 </head>
 <body>
 
-<a class="back" href="/">← Înapoi</a>
+<a class="back" href="/index.html">← Înapoi</a>
 
 <div class="card">
   <div class="card-header">
@@ -118,7 +118,7 @@ async function login(){
   const err=document.getElementById('loginErr'); err.classList.remove('show');
   if(!username||!password){ err.textContent='⚠ Completați toate câmpurile.'; err.classList.add('show'); return; }
   const res=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password,org:'service'})});
-  if(res.ok) location.href='/service';
+  if(res.ok) location.href='service-dashboard.html';
   else { err.textContent='⚠ '+(await res.text()||'Date incorecte.'); err.classList.add('show'); }
 }
 async function register(){
