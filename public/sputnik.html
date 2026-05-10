@@ -2,7 +2,7 @@
 <html lang="ro">
 <head>
 <meta charset="UTF-8">
-<title>Bratva Panel — Sputnik</title>
+<title>Bratva Panel — Sputnik (Pagina 2)</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -28,9 +28,9 @@
       repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(255,255,255,0.012) 80px, rgba(255,255,255,0.012) 81px),
       repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(255,255,255,0.012) 80px, rgba(255,255,255,0.012) 81px);
   }
-/* ── SIDEBAR ── */
-  :root { --sb-collapsed: 64px; --sb-expanded: 220px; }
 
+  /* ── SIDEBAR ── */
+  :root { --sb-collapsed: 64px; --sb-expanded: 220px; }
   body { display: flex; min-height: 100vh; }
 
   .sidebar {
@@ -192,19 +192,14 @@
     transition: margin-left 0.28s cubic-bezier(.4,0,.2,1);
   }
 
-  .page-header { padding: 40px 36px 28px; display: flex; align-items: flex-end; justify-content: space-between; }
+  /* ── PAGE HEADER ── */
+  .page-header { padding: 40px 36px 20px; display: flex; align-items: flex-end; justify-content: space-between; }
   .page-header-left { display: flex; flex-direction: column; gap: 4px; }
   .page-label { font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: var(--red-bright); }
   .page-title { font-family: 'Bebas Neue', sans-serif; font-size: 46px; letter-spacing: 6px; line-height: 1; }
   .page-sub { font-size: 13px; color: var(--muted); letter-spacing: 0.5px; margin-top: 4px; }
-  .btn-save {
-    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 2px;
-    text-transform: uppercase; background: var(--red); color: white; border: none;
-    padding: 12px 28px; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;
-  }
-  .btn-save:hover { background: var(--red-bright); box-shadow: 0 0 20px var(--red-glow); transform: translateY(-1px); }
 
-  /* ── PAGE TABS ── */
+  /* ── PAGE TABS (Pagina 1 / Pagina 2) ── */
   .page-tabs {
     display: flex;
     gap: 8px;
@@ -231,6 +226,14 @@
     color: var(--red-bright);
   }
 
+  .btn-save {
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 2px;
+    text-transform: uppercase; background: var(--red); color: white; border: none;
+    padding: 12px 28px; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;
+  }
+  .btn-save:hover { background: var(--red-bright); box-shadow: 0 0 20px var(--red-glow); transform: translateY(-1px); }
+
+  /* ── TABLE ── */
   .table-wrap { margin: 0 36px 48px; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; background: var(--dark2); }
   .table-wrap table { width: 100%; border-collapse: collapse; }
   .table-wrap thead tr { background: var(--dark3); border-bottom: 1px solid var(--border2); }
@@ -262,26 +265,30 @@
   select.color-select.is-nu:hover, select.color-select.is-nu:focus { background: rgba(192,57,43,0.28) !important; }
 
   /* Read-only cells */
-  .cell-text {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 14px; font-weight: 500;
-    color: var(--text); padding: 6px 10px;
-    display: block; user-select: none;
-  }
+  .cell-text { font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 500; color: var(--text); padding: 6px 10px; display: block; user-select: none; }
   .cell-text.muted { color: var(--muted); }
-  .grade-text {
-    font-family: 'Rajdhani', sans-serif;
-    font-weight: 700; font-size: 12px; letter-spacing: 1px;
-    text-transform: uppercase; color: var(--red-bright);
-    padding: 6px 10px; display: block; user-select: none;
-  }
-  .danu-text {
-    font-family: 'Rajdhani', sans-serif;
-    font-weight: 700; font-size: 13px;
-    padding: 6px 10px; display: block; user-select: none; text-align: center;
-  }
+  .grade-text { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--red-bright); padding: 6px 10px; display: block; user-select: none; }
+  .danu-text { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; padding: 6px 10px; display: block; user-select: none; text-align: center; }
   .danu-text.is-da { color: #2ecc71; }
   .danu-text.is-nu { color: var(--red-bright); }
+
+  /* ── PAGE BADGE ── */
+  .page-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: rgba(192,57,43,0.15);
+    border: 1px solid var(--red);
+    color: var(--red-bright);
+    padding: 4px 10px;
+    border-radius: 2px;
+    margin-left: 10px;
+    vertical-align: middle;
+  }
 
   .toast {
     position: fixed; bottom: 28px; right: 28px;
@@ -303,13 +310,13 @@
     <span class="sb-brand-text">BRATVA</span>
   </div>
   <nav class="sb-nav">
-    <a href="/dashboard"  class="sb-link"><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
-    <a href="/bratva-panel"     class="sb-link"><span class="sb-icon">🔱</span><span class="sb-label">Bratva</span></a>
-    <a href="/sputnik-panel"    class="sb-link active"><span class="sb-icon">⚡</span><span class="sb-label">Sputnik</span></a>
-    <a href="/task"       class="sb-link"><span class="sb-icon">📋</span><span class="sb-label">Task</span></a>
-    <a href="/calculator" class="sb-link"><span class="sb-icon">💰</span><span class="sb-label">Calculator</span></a>
-    <a href="/invoiri"   class="sb-link"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
-    <a href="/admin"      class="sb-link" id="adminLink" style="display:none"><span class="sb-icon">🛡</span><span class="sb-label">Admin</span></a>
+    <a href="dashboard.html"  class="sb-link"><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
+    <a href="bratva.html"     class="sb-link"><span class="sb-icon">🔱</span><span class="sb-label">Bratva</span></a>
+    <a href="sputnik.html"    class="sb-link active"><span class="sb-icon">⚡</span><span class="sb-label">Sputnik</span></a>
+    <a href="task.html"       class="sb-link"><span class="sb-icon">📋</span><span class="sb-label">Task</span></a>
+    <a href="calculator.html" class="sb-link"><span class="sb-icon">💰</span><span class="sb-label">Calculator</span></a>
+    <a href="invoiri.html"    class="sb-link"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
+    <a href="admin.html"      class="sb-link" id="adminLink" style="display:none"><span class="sb-icon">🛡</span><span class="sb-label">Admin</span></a>
   </nav>
   <div class="sb-bottom">
     <div class="sb-user">
@@ -325,40 +332,43 @@
     </button>
   </div>
 </aside>
+
 <div class="main-content">
 
-<div class="page-header">
-  <div class="page-header-left">
-    <div class="page-label">Organizație</div>
-    <div class="page-title">⚡ Sputnik</div>
-    <div class="page-sub">Locurile 1–35 — evidența prezenței, taskurilor și învoirilor membrilor Sputnik.</div>
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-label">Organizație</div>
+      <div class="page-title">⚡ Sputnik <span class="page-badge">Pagina 2</span></div>
+      <div class="page-sub">Locurile 36–70 — evidența prezenței, taskurilor și învoirilor membrilor Sputnik.</div>
+    </div>
+    <button class="btn-save" id="saveBtn" onclick="save()">💾 Salvează</button>
   </div>
-  <button class="btn-save" id="saveBtn" onclick="save()">💾 Salvează</button>
-</div>
 
-<!-- PAGE TABS -->
-<div class="page-tabs">
-  <a class="page-tab active" href="/sputnik-panel">⚡ Pagina 1 &nbsp;(1–35)</a>
-  <a class="page-tab" href="/sputnik2-panel">⚡ Pagina 2 &nbsp;(36–70)</a>
-</div>
+  <!-- PAGE TABS -->
+  <div class="page-tabs">
+    <a class="page-tab" href="sputnik.html">⚡ Pagina 1 &nbsp;(1–35)</a>
+    <a class="page-tab active" href="sputnik2.html">⚡ Pagina 2 &nbsp;(36–70)</a>
+  </div>
 
-<div class="table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Nume</th>
-        <th>CNP</th>
-        <th>Telefon</th>
-        <th>Grad</th>
-        <th>Task Săptămânal</th>
-        <th>Task Avansări</th>
-        <th>Învoire</th>
-        <th>Prezență</th>
-      </tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
-  </table>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Nume</th>
+          <th>CNP</th>
+          <th>Telefon</th>
+          <th>Grad</th>
+          <th>Task Săptămânal</th>
+          <th>Task Avansări</th>
+          <th>Învoire</th>
+          <th>Prezență</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
 </div>
 
 <div class="toast" id="toast">✓ Date salvate cu succes</div>
@@ -376,7 +386,7 @@ function applyColor(sel){
 async function init(){
   const res = await fetch("/me");
   user = await res.json();
-  if(!user){ location.href="/login"; return; }
+  if(!user){ location.href="bratva-login.html"; return; }
   document.getElementById("navUsername").textContent = user.username;
   if(user.role && user.role.toLowerCase() === "leader"){
     document.getElementById("adminLink").style.display = "";
@@ -384,33 +394,14 @@ async function init(){
   load();
 }
 
-function sortByGrade(data){
-  return [...data].sort((a, b) => {
-    const hasA = a.nume && a.nume.trim() !== "";
-    const hasB = b.nume && b.nume.trim() !== "";
-    if(!hasA && !hasB) return 0;
-    if(!hasA) return 1;
-    if(!hasB) return -1;
-    const iA = grades.indexOf(a.grad);
-    const iB = grades.indexOf(b.grad);
-    const rankA = iA === -1 ? grades.length : iA;
-    const rankB = iB === -1 ? grades.length : iB;
-    return rankA - rankB;
-  });
-}
-
 function createRows(data=[]){
   const tbody = document.getElementById("tableBody");
   let html = "";
   const isLeader = user.role === "leader";
 
-  const filled = data.filter(d => d.nume && d.nume.trim() !== "");
-  const empty  = data.filter(d => !d.nume || d.nume.trim() === "");
-  const sorted = [...sortByGrade(filled), ...empty];
-  while(sorted.length < 35) sorted.push({});
-
   for(let i=0;i<35;i++){
-    const d = sorted[i]||{};
+    const d = data[i]||{};
+    const displayNum = i + 36; // Numbers 36–70
 
     if(isLeader){
       const daNu = (val) => `
@@ -419,7 +410,7 @@ function createRows(data=[]){
           <option ${val=="Nu"?"selected":""}>Nu</option>
         </select>`;
       html += `<tr>
-        <td class="row-num">${i+1}</td>
+        <td class="row-num">${displayNum}</td>
         <td><input value="${d.nume||""}" placeholder="—"></td>
         <td><input value="${d.cnp||""}" placeholder="—"></td>
         <td><input value="${d.telefon||""}" placeholder="—"></td>
@@ -433,7 +424,7 @@ function createRows(data=[]){
       const sv = (v) => `<span class="cell-text ${v?"":"muted"}">${v||"—"}</span>`;
       const dn = (v) => `<span class="danu-text ${v=="Da"?"is-da":v=="Nu"?"is-nu":""}">${v||"—"}</span>`;
       html += `<tr>
-        <td class="row-num">${i+1}</td>
+        <td class="row-num">${displayNum}</td>
         <td>${sv(d.nume)}</td>
         <td>${sv(d.cnp)}</td>
         <td>${sv(d.telefon)}</td>
@@ -451,20 +442,18 @@ function createRows(data=[]){
       applyColor(sel);
       sel.addEventListener("change", ()=>applyColor(sel));
     });
-
-    // Re-sort live când se schimbă gradul
-    document.querySelectorAll("select.grade-select").forEach(sel=>{
-      sel.addEventListener("change", ()=>{
-        const data = collectData();
-        createRows(data);
-      });
-    });
   } else {
     document.getElementById("saveBtn").style.display="none";
   }
 }
 
-function collectData(){
+async function load(){
+  const res = await fetch("/sputnik2");
+  const data = await res.json();
+  createRows(data);
+}
+
+async function save(){
   const rows = document.querySelectorAll("#tableBody tr");
   const data = [];
   rows.forEach(r=>{
@@ -482,36 +471,28 @@ function collectData(){
       prezenta: selects[2].value
     });
   });
-  return data;
+  const res = await fetch("/sputnik2",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+  if(res.ok){
+    showToast("✓ Date salvate cu succes");
+  } else {
+    showToast("⚠ Eroare la salvare");
+  }
 }
 
-async function load(){
-  const res = await fetch("/sputnik");
-  const data = await res.json();
-  createRows(data);
-}
-
-async function save(){
-  const data = collectData();
-  await fetch("/sputnik",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
-  showToast();
-}
-
-function showToast(){
+function showToast(msg){
   const t = document.getElementById("toast");
+  t.textContent = msg || "✓ Date salvate cu succes";
   t.classList.add("show");
   setTimeout(()=>t.classList.remove("show"), 3000);
 }
 
 async function logout(){
   await fetch("/logout",{method:"POST"}).catch(()=>{});
-  location.href="/login";
+  location.href="bratva-login.html";
 }
 
 init();
 </script>
 <script src="notifications.js"></script>
-</div>
-</div>
 </body>
 </html>
