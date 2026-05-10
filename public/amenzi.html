@@ -265,7 +265,7 @@ async function adaugaAmenda(){
   const motiv=document.getElementById("fMotiv").value.trim();
   const termen=document.getElementById("fTermen").value;
   if(!cnp||!suma||!motiv||!termen){showToast("Completează toate câmpurile!","#e74c3c");return;}
-  const res=await fetch("/amenzi",{method:"POST",headers:{"Content-Type":"application/json"},
+  const res=await fetch("/amenzi-data",{method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({cnp,nume,suma,motiv,termen,faction:currentFaction})});
   if(!res.ok){showToast("Eroare la salvare!","#e74c3c");return;}
   document.getElementById("fMember").value="";
@@ -279,7 +279,7 @@ async function adaugaAmenda(){
 }
 
 async function loadAmenzi(){
-  const r=await fetch(`/amenzi?faction=${currentFaction}`);
+  const r=await fetch(`/amenzi-data?faction=${currentFaction}`);
   const list=await r.json();
   const cont=document.getElementById("amenziList");
   if(!list.length){cont.innerHTML='<div class="empty-state">📭 Nicio amendă.</div>';return;}
@@ -311,8 +311,8 @@ function renderAmenda(a){
   </div>`;
 }
 
-async function marcheazaPlatita(id){ await fetch(`/amenzi/${id}/platita`,{method:"PATCH"}); showToast("✓ Marcată ca platită!","#27ae60"); loadAmenzi(); }
-async function stergeAmenda(id){ if(!confirm("Ștergi amenda?")) return; await fetch(`/amenzi/${id}`,{method:"DELETE"}); showToast("Amendă ștearsă."); loadAmenzi(); }
+async function marcheazaPlatita(id){ await fetch(`/amenzi-data/${id}/platita`,{method:"PATCH"}); showToast("✓ Marcată ca platită!","#27ae60"); loadAmenzi(); }
+async function stergeAmenda(id){ if(!confirm("Ștergi amenda?")) return; await fetch(`/amenzi-data/${id}`,{method:"DELETE"}); showToast("Amendă ștearsă."); loadAmenzi(); }
 function scrollToHash(){ if(!location.hash) return; const el=document.querySelector(location.hash); if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.style.outline='2px solid var(--red-bright)';setTimeout(()=>el.style.outline='',2000);} }
 function esc(s){return(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function showToast(msg,color){const t=document.getElementById("toast");t.textContent=msg;t.style.borderColor=color||"var(--red)";t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3000);}

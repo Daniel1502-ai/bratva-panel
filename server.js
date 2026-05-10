@@ -364,7 +364,7 @@ app.delete("/tasks/:id", requireRole("leader"), (req, res) => {
 });
 
 // ---------- AMENZI ----------
-app.get("/amenzi", requireAuth, (req, res) => {
+app.get("/amenzi-data", requireAuth, (req, res) => {
     const userOrg = (req.session.user.org || 'bratva').toLowerCase();
     const { faction } = req.query;
     let query = `SELECT * FROM amenzi WHERE org=?`;
@@ -374,20 +374,20 @@ app.get("/amenzi", requireAuth, (req, res) => {
     res.json(db.prepare(query).all(...params));
 });
 
-app.get("/amenzi/my", requireAuth, (req, res) => {
+app.get("/amenzi-data/my", requireAuth, (req, res) => {
     const cnp = req.session.user.cnp;
     if (!cnp) return res.json([]);
     const rows = db.prepare(`SELECT * FROM amenzi WHERE cnp=? ORDER BY postedAt DESC`).all(cnp);
     res.json(rows);
 });
 
-app.get("/amenzi/:id", requireAuth, (req, res) => {
+app.get("/amenzi-data/:id", requireAuth, (req, res) => {
     const row = db.prepare(`SELECT * FROM amenzi WHERE id=?`).get(req.params.id);
     if (!row) return res.status(404).send("Inexistent");
     res.json(row);
 });
 
-app.post("/amenzi", requireRole("leader"), (req, res) => {
+app.post("/amenzi-data", requireRole("leader"), (req, res) => {
     const { cnp, nume, suma, motiv, termen, faction } = req.body;
     if (!cnp || !nume || !suma || !motiv || !termen) return res.status(400).send("Date incomplete");
     const userOrg = (req.session.user.org || 'bratva').toLowerCase();
@@ -411,12 +411,12 @@ app.post("/amenzi", requireRole("leader"), (req, res) => {
     res.json({ id: amendaId });
 });
 
-app.patch("/amenzi/:id/platita", requireRole("leader"), (req, res) => {
+app.patch("/amenzi-data/:id/platita", requireRole("leader"), (req, res) => {
     db.prepare(`UPDATE amenzi SET status='platita' WHERE id=?`).run(req.params.id);
     res.send("OK");
 });
 
-app.delete("/amenzi/:id", requireRole("leader"), (req, res) => {
+app.delete("/amenzi-data/:id", requireRole("leader"), (req, res) => {
     db.prepare(`DELETE FROM amenzi WHERE id=?`).run(req.params.id);
     res.send("OK");
 });
