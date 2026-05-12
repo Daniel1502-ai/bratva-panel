@@ -7,6 +7,21 @@ const bcrypt = require("bcrypt");
 const app = express();
 const db = new Database("/app/data/database.db");
 
+// ── DISCORD WEBHOOK ──
+const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1503895904934035601/Qdu4p91CB4XpO4bE5a1QsxOtjClIpxY9OgnlGMicx6yvUlaF2Eo5o2oxDlLz0mLG_jkM";
+
+async function notifyDiscord(embed){
+  try {
+    await fetch(DISCORD_WEBHOOK, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ embeds: [embed] })
+    });
+  } catch(e) {
+    console.error("Discord webhook error:", e.message);
+  }
+}
+
 db.pragma("journal_mode = WAL");
 
 app.use(express.json());
@@ -349,6 +364,27 @@ app.post("/tasks", requireRole("leader"), (req, res) => {
         const users = db.prepare(`SELECT id FROM users WHERE COALESCE(org,'bratva')=?`).all(userOrg);
         for (const u of users) insertNotif.run(u.id, taskId, `📋 Task nou pentru toți: "${title}"`, userOrg);
     }
+
+    // Discord notification
+    const priorityEmoji = priority === 'urgent' ? '🔴' : priority === 'high' ? '🟠' : '🟡';
+    const factionLabel = faction === 'sputnik' ? '⚡ Sputnik' : faction === 'service' ? '⚙️ Service' : '🔱 Bratva';
+    const assignedLabel = assigned === 'all' ? 'Toți membrii' : assigned;
+    const deadlineLabel = deadlineVal ? deadlineVal.substring(0,10) : 'Fără termen';
+    notifyDiscord({
+      title: `📋 Task Nou — ${title}`,
+      color: priority === 'urgent' ? 0xe74c3c : priority === 'high' ? 0xe67e22 : 0xf1c40f,
+      fields: [
+        { name: "📌 Prioritate", value: `${priorityEmoji} ${priority || 'normal'}`, inline: true },
+        { name: "👥 Atribuit", value: assignedLabel, inline: true },
+        { name: "🏴 Facțiune", value: factionLabel, inline: true },
+        { name: "⏰ Termen", value: deadlineLabel, inline: true },
+        { name: "👤 Postat de", value: req.session.user.username, inline: true },
+        ...(description ? [{ name: "📝 Descriere", value: description.substring(0,200), inline: false }] : [])
+      ],
+      footer: { text: "Bratva Panel • Notificări Site" },
+      timestamp: new Date().toISOString()
+    });
+
     res.json({ id: taskId });
 });
 
@@ -407,6 +443,24 @@ app.post("/amenzi-data", requireRole("leader"), (req, res) => {
         db.prepare(`INSERT INTO notifications (userId,amendaId,message,org) VALUES (?,?,?,?)`)
           .run(u.id, amendaId, `⚠️ Ai primit o amendă nouă!`, userOrg);
     }
+
+    // Discord notification
+    const factionLabelA = factionVal === 'sputnik' ? '⚡ Sputnik' : factionVal === 'service' ? '⚙️ Service' : '🔱 Bratva';
+    const sumaFmt = parseInt(suma).toLocaleString('ro-RO') + '$';
+    notifyDiscord({
+      title: `⚠️ Amendă Nouă`,
+      color: 0xe74c3c,
+      fields: [
+        { name: "👤 Membru", value: nume, inline: true },
+        { name: "🏴 Facțiune", value: factionLabelA, inline: true },
+        { name: "💰 Sumă", value: sumaFmt, inline: true },
+        { name: "⏰ Termen", value: termen, inline: true },
+        { name: "👮 Postat de", value: postedBy, inline: true },
+        { name: "📝 Motiv", value: motiv.substring(0,200), inline: false }
+      ],
+      footer: { text: "Bratva Panel • Notificări Site" },
+      timestamp: new Date().toISOString()
+    });
 
     res.json({ id: amendaId });
 });
