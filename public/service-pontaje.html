@@ -152,10 +152,12 @@
     <span class="sb-brand-text">SERVICE</span>
   </div>
   <nav class="sb-nav">
-    <a href="service-dashboard.html" class="sb-link"><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
-    <a href="service-invoiri.html" class="sb-link"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
-    <a href="service-pontaje.html" class="sb-link active"><span class="sb-icon">💰</span><span class="sb-label">Pontaje</span></a>
-    <a href="service-admin.html" class="sb-link" id="adminLink" style="display:none"><span class="sb-icon">🛡</span><span class="sb-label">Admin</span></a>
+    <a href="/service-panel"    class="sb-link"><span class="sb-icon">🏠</span><span class="sb-label">Home</span></a>
+    <a href="/service-evidenta" class="sb-link"><span class="sb-icon">🔧</span><span class="sb-label">Evidență</span></a>
+    <a href="/service-pontajes" class="sb-link active"><span class="sb-icon">💰</span><span class="sb-label">Pontaje</span></a>
+    <a href="/service-invoiri"  class="sb-link"><span class="sb-icon">📅</span><span class="sb-label">Învoiri</span></a>
+    <a href="/service-amenzi"   class="sb-link"><span class="sb-icon">⚠️</span><span class="sb-label">Amenzi</span></a>
+    <a href="/service-admin"    class="sb-link" id="adminLink" style="display:none"><span class="sb-icon">🛡</span><span class="sb-label">Admin</span></a>
   </nav>
   <div class="sb-bottom">
     <div class="sb-user">
@@ -195,12 +197,12 @@
 
 <div class="stats-bar">
   <div class="stat"><div class="stat-value" id="statTotal">—</div><div class="stat-label">Total Persoane</div></div>
-  <div class="stat"><div class="stat-value" id="statCalif">—</div><div class="stat-label">Calificate (≥15 ore)</div></div>
+  <div class="stat"><div class="stat-value" id="statCalif">—</div><div class="stat-label">Calificate (≥25 ore)</div></div>
   <div class="stat"><div class="stat-value" id="statSalar">—</div><div class="stat-label">Total Salarii Brute</div></div>
 </div>
 
 <div class="info-bar">
-  <strong>Reguli salarizare:</strong> Salariu de bază <strong>$500,000</strong> pentru persoanele cu <strong>≥ 15 ore</strong> pontaj.
+  <strong>Reguli salarizare:</strong> Salariu de bază <strong>$500,000</strong> pentru persoanele cu <strong>≥ 25 ore</strong> pontaj.
   Bonusuri top 5: 🥇 $1,000,000 &nbsp;|&nbsp; 🥈 $800,000 &nbsp;|&nbsp; 🥉 $600,000 &nbsp;|&nbsp; 4️⃣ $400,000 &nbsp;|&nbsp; 5️⃣ $200,000
 </div>
 
@@ -248,7 +250,7 @@ let user;
 const SALARY_BASE = 500000;
 const BONUS = [1000000, 800000, 600000, 400000, 200000];
 const BONUS_LABELS = ['🥇','🥈','🥉','4️⃣','5️⃣'];
-const MIN_ORE = 15;
+const MIN_ORE = 25;
 
 function fmt(n){ return '$' + n.toLocaleString('ro-RO'); }
 
