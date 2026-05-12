@@ -179,7 +179,6 @@
 
 <script>
 let user;
-let allMembers = [];
 const grades = ["Manager","Mecanic Profesionist","Mecanic Șef","Mecanic","Ucenic"];
 
 async function init(){
@@ -191,9 +190,6 @@ async function init(){
     const al = document.getElementById("adminLink");
     if(al) al.style.display = "";
   }
-  // Load members list for dropdown
-  const mr = await fetch("/service-members");
-  allMembers = await mr.json();
   load();
   loadNotifCount();
   setInterval(loadNotifCount, 30000);
@@ -213,17 +209,10 @@ function createRows(data=[]){
       : `<span title="Fără amendă" style="font-size:18px;color:var(--muted);cursor:default">—</span>`;
 
     if(isLeader){
-      // Build name dropdown
-      const nameOpts = `<option value="${d.nume||''}">${d.nume||'—'}</option>`
-        + allMembers.filter(m=>m.nume!==d.nume).map(m=>`<option value="${m.nume}">${m.nume}</option>`).join('');
       html += `<tr>
         <td class="row-num">${i+1}</td>
-        <td>
-          <select class="name-select" onchange="onNameChange(this, ${i})">
-            ${nameOpts}
-          </select>
-        </td>
-        <td><input value="${d.cnp||''}" placeholder="—" class="cnp-input"></td>
+        <td><input value="${d.nume||''}" placeholder="—"></td>
+        <td><input value="${d.cnp||''}" placeholder="—"></td>
         <td><input value="${d.telefon||''}" placeholder="—"></td>
         <td><select class="grade-select">${grades.map(g=>`<option ${d.grad===g?"selected":""}>${g}</option>`).join("")}</select></td>
         <td><input value="${d.pontaj||''}" placeholder="—"></td>
@@ -248,15 +237,6 @@ function createRows(data=[]){
   if(!isLeader) document.getElementById("saveBtn").style.display="none";
 }
 
-function onNameChange(sel, rowIdx){
-  const tr = sel.closest("tr");
-  const nome = sel.value;
-  const member = allMembers.find(m=>m.nume===nome);
-  if(member){
-    tr.querySelector(".cnp-input").value = member.cnp || "";
-  }
-}
-
 async function load(){
   const res = await fetch("/service");
   const data = await res.json();
@@ -267,15 +247,14 @@ async function save(){
   const rows = document.querySelectorAll("#tableBody tr");
   const data = [];
   rows.forEach(r=>{
-    const nameSelect = r.querySelector("select.name-select");
     const inputs = r.querySelectorAll("input");
     const gradeSelect = r.querySelector("select.grade-select");
     data.push({
-      nume: nameSelect ? nameSelect.value : inputs[0]?.value||'',
-      cnp: inputs[0]?.value||'',
-      telefon: inputs[1]?.value||'',
+      nume: inputs[0]?.value||'',
+      cnp: inputs[1]?.value||'',
+      telefon: inputs[2]?.value||'',
       grad: gradeSelect ? gradeSelect.value : '',
-      pontaj: inputs[2]?.value||''
+      pontaj: inputs[3]?.value||''
     });
   });
   await fetch("/service",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
