@@ -181,6 +181,36 @@
 let user;
 const grades = ["Manager","Mecanic Profesionist","Mecanic Șef","Mecanic","Ucenic"];
 
+function sortByGrade(data){
+  return [...data].sort((a,b)=>{
+    const hasA = a.nume && a.nume.trim() !== "";
+    const hasB = b.nume && b.nume.trim() !== "";
+    if(!hasA && !hasB) return 0;
+    if(!hasA) return 1;
+    if(!hasB) return -1;
+    const iA = grades.indexOf(a.grad);
+    const iB = grades.indexOf(b.grad);
+    return (iA===-1?grades.length:iA) - (iB===-1?grades.length:iB);
+  });
+}
+
+function collectData(){
+  const rows = document.querySelectorAll("#tableBody tr");
+  const data = [];
+  rows.forEach(r=>{
+    const inputs = r.querySelectorAll("input");
+    const gradeSelect = r.querySelector("select.grade-select");
+    data.push({
+      nume: inputs[0]?.value||'',
+      cnp: inputs[1]?.value||'',
+      telefon: inputs[2]?.value||'',
+      grad: gradeSelect ? gradeSelect.value : '',
+      pontaj: inputs[3]?.value||''
+    });
+  });
+  return data;
+}
+
 async function init(){
   const res = await fetch("/me");
   user = await res.json();
@@ -199,8 +229,14 @@ function createRows(data=[]){
   const tbody = document.getElementById("tableBody");
   const isLeader = user.role === "leader";
   let html = "";
+
+  const filled = data.filter(d => d.nume && d.nume.trim() !== "");
+  const empty  = data.filter(d => !d.nume || d.nume.trim() === "");
+  const sorted = [...sortByGrade(filled), ...empty];
+  while(sorted.length < 25) sorted.push({});
+
   for(let i=0;i<25;i++){
-    const d = data[i]||{};
+    const d = sorted[i]||{};
     const inv = d.invoire==='Da'
       ? `<span class="pill yes">🟡 Da</span>`
       : `<span class="pill no">✓ Nu</span>`;
@@ -234,7 +270,14 @@ function createRows(data=[]){
     }
   }
   tbody.innerHTML = html;
-  if(!isLeader) document.getElementById("saveBtn").style.display="none";
+
+  if(isLeader){
+    document.querySelectorAll("select.grade-select").forEach(sel=>{
+      sel.addEventListener("change", ()=>{ createRows(collectData()); });
+    });
+  } else {
+    document.getElementById("saveBtn").style.display="none";
+  }
 }
 
 async function load(){
@@ -244,19 +287,7 @@ async function load(){
 }
 
 async function save(){
-  const rows = document.querySelectorAll("#tableBody tr");
-  const data = [];
-  rows.forEach(r=>{
-    const inputs = r.querySelectorAll("input");
-    const gradeSelect = r.querySelector("select.grade-select");
-    data.push({
-      nume: inputs[0]?.value||'',
-      cnp: inputs[1]?.value||'',
-      telefon: inputs[2]?.value||'',
-      grad: gradeSelect ? gradeSelect.value : '',
-      pontaj: inputs[3]?.value||''
-    });
-  });
+  const data = collectData();
   await fetch("/service",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
   const t = document.getElementById("toast");
   t.classList.add("show");
