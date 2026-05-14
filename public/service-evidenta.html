@@ -233,9 +233,9 @@ function createRows(data=[]){
   const filled = data.filter(d => d.nume && d.nume.trim() !== "");
   const empty  = data.filter(d => !d.nume || d.nume.trim() === "");
   const sorted = [...sortByGrade(filled), ...empty];
-  while(sorted.length < 25) sorted.push({});
+  while(sorted.length < 50) sorted.push({});
 
-  for(let i=0;i<25;i++){
+  for(let i=0;i<50;i++){
     const d = sorted[i]||{};
     const inv = d.invoire==='Da'
       ? `<span class="pill yes">🟡 Da</span>`
