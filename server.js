@@ -58,6 +58,34 @@ db.exec(`CREATE TABLE IF NOT EXISTS sputnik2 (
     nume TEXT, cnp TEXT, telefon TEXT, grad TEXT,
     task TEXT, taskAvansari TEXT, invoire TEXT, prezenta TEXT
 )`);
+// Dynamic sputnik pages metadata
+db.exec(`CREATE TABLE IF NOT EXISTS sputnik_pages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    page_num INTEGER UNIQUE,
+    title TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+)`);
+// Ensure base pages exist in metadata
+try { db.prepare("INSERT OR IGNORE INTO sputnik_pages (page_num,title) VALUES (1,'Pagina 1')").run(); } catch {}
+try { db.prepare("INSERT OR IGNORE INTO sputnik_pages (page_num,title) VALUES (2,'Pagina 2')").run(); } catch {}
+
+// Helper: get all sputnik page numbers
+function getSputnikPages() {
+    return db.prepare("SELECT page_num FROM sputnik_pages ORDER BY page_num").all().map(r => r.page_num);
+}
+// Helper: get table name for page num
+function sputnikTable(n) { return n === 1 ? 'sputnik' : `sputnik${n}`; }
+// Helper: ensure sputnik table exists for page n
+function ensureSputnikTable(n) {
+    const tbl = sputnikTable(n);
+    db.exec(`CREATE TABLE IF NOT EXISTS ${tbl} (
+        id INTEGER PRIMARY KEY,
+        nume TEXT, cnp TEXT, telefon TEXT, grad TEXT,
+        task TEXT, taskAvansari TEXT, invoire TEXT, prezenta TEXT
+    )`);
+}
+// Ensure existing pages have their tables
+getSputnikPages().forEach(n => ensureSputnikTable(n));
 db.exec(`CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL, description TEXT,
@@ -196,9 +224,14 @@ app.post("/register", async (req, res) => {
     if (orgVal === 'service') {
         member = db.prepare(`SELECT nume FROM service WHERE cnp=? LIMIT 1`).get(cnp.trim());
     } else {
-        member = db.prepare(`SELECT nume FROM bratva WHERE cnp=?`).get(cnp.trim())
-               || db.prepare(`SELECT nume FROM sputnik WHERE cnp=?`).get(cnp.trim())
-               || db.prepare(`SELECT nume FROM sputnik2 WHERE cnp=?`).get(cnp.trim());
+        member = db.prepare(`SELECT nume FROM bratva WHERE cnp=?`).get(cnp.trim());
+        if (!member) {
+            for (const pn of getSputnikPages()) {
+                ensureSputnikTable(pn);
+                member = db.prepare(`SELECT nume FROM ${sputnikTable(pn)} WHERE cnp=?`).get(cnp.trim());
+                if (member) break;
+            }
+        }
     }
     if (!member) return res.status(403).send("CNP-ul nu este înregistrat în organizație");
 
@@ -312,32 +345,35 @@ app.get("/tasks", requireAuth, (req, res) => {
 app.get("/my-member-name", requireAuth, (req, res) => {
     const cnp = req.session.user.cnp;
     if (!cnp) return res.json({ names: [] });
-    const rows = db.prepare(`SELECT nume FROM bratva WHERE cnp=? UNION SELECT nume FROM sputnik WHERE cnp=? UNION SELECT nume FROM sputnik2 WHERE cnp=?`).all(cnp, cnp, cnp);
-    res.json({ names: rows.map(r => r.nume).filter(Boolean) });
+    let nameRows = db.prepare(`SELECT nume FROM bratva WHERE cnp=?`).all(cnp);
+    for (const pn of getSputnikPages()) {
+        ensureSputnikTable(pn);
+        const r = db.prepare(`SELECT nume FROM ${sputnikTable(pn)} WHERE cnp=?`).all(cnp);
+        nameRows = nameRows.concat(r);
+    }
+    res.json({ names: nameRows.map(r => r.nume).filter(Boolean) });
 });
 
 app.get("/members", requireAuth, (req, res) => {
-    const rows = db.prepare(
-        `SELECT nume,'Bratva' as faction FROM bratva WHERE nume IS NOT NULL AND nume!=''
-         UNION ALL
-         SELECT nume,'Sputnik' as faction FROM sputnik WHERE nume IS NOT NULL AND nume!=''
-         UNION ALL
-         SELECT nume,'Sputnik' as faction FROM sputnik2 WHERE nume IS NOT NULL AND nume!=''
-         ORDER BY faction,nume`
-    ).all();
+    let rows = db.prepare(`SELECT nume,'Bratva' as faction FROM bratva WHERE nume IS NOT NULL AND nume!=''`).all();
+    for (const pn of getSputnikPages()) {
+        ensureSputnikTable(pn);
+        const sRows = db.prepare(`SELECT nume,'Sputnik' as faction FROM ${sputnikTable(pn)} WHERE nume IS NOT NULL AND nume!=''`).all();
+        rows = rows.concat(sRows);
+    }
+    rows.sort((a,b) => a.faction.localeCompare(b.faction) || (a.nume||'').localeCompare(b.nume||''));
     res.json(rows);
 });
 
 // All bratva+sputnik members with cnp for amenda form
 app.get("/bratva-members", requireAuth, (req, res) => {
-    const rows = db.prepare(
-        `SELECT nume, cnp, 'Bratva' as faction FROM bratva WHERE nume IS NOT NULL AND nume!=''
-         UNION ALL
-         SELECT nume, cnp, 'Sputnik' as faction FROM sputnik WHERE nume IS NOT NULL AND nume!=''
-         UNION ALL
-         SELECT nume, cnp, 'Sputnik' as faction FROM sputnik2 WHERE nume IS NOT NULL AND nume!=''
-         ORDER BY faction, nume`
-    ).all();
+    let rows = db.prepare(`SELECT nume, cnp, 'Bratva' as faction FROM bratva WHERE nume IS NOT NULL AND nume!=''`).all();
+    for (const pn of getSputnikPages()) {
+        ensureSputnikTable(pn);
+        const sRows = db.prepare(`SELECT nume, cnp, 'Sputnik' as faction FROM ${sputnikTable(pn)} WHERE nume IS NOT NULL AND nume!=''`).all();
+        rows = rows.concat(sRows);
+    }
+    rows.sort((a,b) => a.faction.localeCompare(b.faction) || (a.nume||'').localeCompare(b.nume||''));
     res.json(rows);
 });
 
@@ -550,9 +586,14 @@ app.post("/invoiri", requireAuth, async (req, res) => {
     if (userOrg === 'service') {
         member = db.prepare(`SELECT nume FROM service WHERE cnp=? LIMIT 1`).get(u.cnp || '');
     } else {
-        member = db.prepare(`SELECT nume FROM bratva WHERE cnp=?`).get(u.cnp || '')
-               || db.prepare(`SELECT nume FROM sputnik WHERE cnp=?`).get(u.cnp || '')
-               || db.prepare(`SELECT nume FROM sputnik2 WHERE cnp=?`).get(u.cnp || '');
+        member = db.prepare(`SELECT nume FROM bratva WHERE cnp=?`).get(u.cnp || '');
+        if (!member) {
+            for (const pn of getSputnikPages()) {
+                ensureSputnikTable(pn);
+                member = db.prepare(`SELECT nume FROM ${sputnikTable(pn)} WHERE cnp=?`).get(u.cnp || '');
+                if (member) break;
+            }
+        }
     }
     const nume = member ? member.nume : u.username;
 
@@ -578,6 +619,77 @@ app.delete("/invoiri/:id", requireAuth, (req, res) => {
     if (row.userId !== u.id && u.role.toLowerCase() !== 'leader') return res.status(403).send("Interzis");
     db.prepare(`DELETE FROM invoiri WHERE id=?`).run(req.params.id);
     res.send("OK");
+});
+
+// ---------- DYNAMIC SPUTNIK PAGES API ----------
+// Get list of all sputnik pages
+app.get("/sputnik-pages", requireAuth, (req, res) => {
+    const pages = db.prepare("SELECT * FROM sputnik_pages ORDER BY page_num").all();
+    res.json(pages);
+});
+
+// Create a new sputnik page (leader only)
+app.post("/sputnik-create-page", requireRole("leader"), (req, res) => {
+    const pages = getSputnikPages();
+    const nextNum = pages.length > 0 ? Math.max(...pages) + 1 : 1;
+    const title = req.body.title || `Pagina ${nextNum}`;
+    try {
+        ensureSputnikTable(nextNum);
+        db.prepare("INSERT INTO sputnik_pages (page_num, title) VALUES (?, ?)").run(nextNum, title);
+        res.json({ page_num: nextNum, title });
+    } catch(e) {
+        res.status(500).send("Eroare la creare pagina: " + e.message);
+    }
+});
+
+// Delete a sputnik page (leader only, can't delete page 1 or 2)
+app.delete("/sputnik-page/:n", requireRole("leader"), (req, res) => {
+    const n = parseInt(req.params.n);
+    if (n <= 2) return res.status(400).send("Paginile 1 și 2 nu pot fi șterse.");
+    db.prepare("DELETE FROM sputnik_pages WHERE page_num=?").run(n);
+    res.send("OK");
+});
+
+// Dynamic GET /sputnik-data/:n
+app.get("/sputnik-data/:n", requireAuth, (req, res) => {
+    const n = parseInt(req.params.n);
+    if (isNaN(n) || n < 1) return res.status(400).send("Invalid page");
+    const pageExists = db.prepare("SELECT id FROM sputnik_pages WHERE page_num=?").get(n);
+    if (!pageExists) return res.status(404).send("Pagina nu există");
+    ensureSputnikTable(n);
+    const rows = db.prepare(`SELECT * FROM ${sputnikTable(n)}`).all();
+    const today = new Date().toISOString().substring(0, 10);
+    const cnps = rows.map(r => r.cnp).filter(Boolean);
+    const amenziActiva = cnps.length ? db.prepare(
+        `SELECT debitor_cnp FROM amenzi WHERE status='activa' AND termen>=? AND debitor_cnp IN (${cnps.map(()=>'?').join(',')})`
+    ).all(today, ...cnps).map(r => r.debitor_cnp) : [];
+    const result = rows.map(r => ({ ...r, amendaActiva: amenziActiva.includes(r.cnp) }));
+    res.json(result);
+});
+
+// Dynamic POST /sputnik-data/:n (save)
+app.post("/sputnik-data/:n", requireRole("leader"), (req, res) => {
+    const n = parseInt(req.params.n);
+    if (isNaN(n) || n < 1) return res.status(400).send("Invalid page");
+    const pageExists = db.prepare("SELECT id FROM sputnik_pages WHERE page_num=?").get(n);
+    if (!pageExists) return res.status(404).send("Pagina nu există");
+    ensureSputnikTable(n);
+    const tbl = sputnikTable(n);
+    db.prepare(`DELETE FROM ${tbl}`).run();
+    const stmt = db.prepare(`INSERT INTO ${tbl} (nume,cnp,telefon,grad,task,taskAvansari,invoire,prezenta) VALUES (?,?,?,?,?,?,?,?)`);
+    const rows = Array.isArray(req.body) ? req.body : [];
+    for (const r of rows) {
+        stmt.run(r.nume||'', r.cnp||'', r.telefon||'', r.grad||'', r.task||'', r.taskAvansari||'', r.invoire||'Nu', r.prezenta||'Nu');
+    }
+    res.send("OK");
+});
+
+// Dynamic sputnik panel route (page 3+)
+app.get('/sputnik-panel/:n', requireAuth, (req, res) => {
+    const n = parseInt(req.params.n);
+    const pageExists = db.prepare("SELECT id FROM sputnik_pages WHERE page_num=?").get(n);
+    if (!pageExists) return res.status(404).send("Pagina nu există");
+    res.sendFile('sputnik-dynamic.html', { root: 'public' });
 });
 
 // ---------- SETUP ADMIN ----------

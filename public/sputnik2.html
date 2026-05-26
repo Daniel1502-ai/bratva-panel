@@ -346,9 +346,11 @@
   </div>
 
   <!-- PAGE TABS -->
-  <div class="page-tabs">
-    <a class="page-tab" href="/sputnik-panel">⚡ Pagina 1 &nbsp;(1–35)</a>
-    <a class="page-tab active" href="/sputnik2-panel">⚡ Pagina 2 &nbsp;(36–70)</a>
+  <div class="page-tabs" id="pageTabs">
+    <!-- loaded dynamically -->
+  </div>
+  <div id="createPageBar" style="display:none;padding:0 36px 18px;">
+    <button class="btn-save" style="background:var(--dark3);border:1px solid var(--border2);color:var(--muted);font-size:11px;padding:8px 18px;" onclick="createPage()">✚ Adaugă Pagină Sputnik</button>
   </div>
 
   <div class="table-wrap">
@@ -392,8 +394,59 @@ async function init(){
   document.getElementById("navUsername").textContent = user.username;
   if(user.role && user.role.toLowerCase() === "leader"){
     document.getElementById("adminLink").style.display = "";
+    document.getElementById("createPageBar").style.display = "";
   }
+  await loadPageTabs();
   load();
+}
+
+async function loadPageTabs(){
+  const res = await fetch("/sputnik-pages");
+  const pages = await res.json();
+  const container = document.getElementById("pageTabs");
+  container.innerHTML = "";
+  const startNums = {1:1,2:36,3:71,4:106};
+  pages.forEach((p,i) => {
+    const a = document.createElement("a");
+    a.className = "page-tab" + (p.page_num === 2 ? " active" : "");
+    const start = startNums[p.page_num] || ((p.page_num-1)*35+1);
+    const end = start+34;
+    const href = p.page_num === 1 ? "/sputnik-panel" : p.page_num === 2 ? "/sputnik2-panel" : `/sputnik-panel/${p.page_num}`;
+    a.href = href;
+    a.textContent = `⚡ ${p.title} (${start}–${end})`;
+    container.appendChild(a);
+  });
+  if(user && user.role === "leader"){
+    const pages2 = await (await fetch("/sputnik-pages")).json();
+    pages2.filter(p=>p.page_num > 2).forEach(p => {
+      const delBtn = document.createElement("button");
+      delBtn.textContent = "🗑";
+      delBtn.title = `Șterge ${p.title}`;
+      delBtn.style.cssText = "background:rgba(192,57,43,0.2);border:1px solid var(--red);color:var(--red-bright);border-radius:3px;padding:6px 10px;cursor:pointer;font-size:13px;margin-left:4px;";
+      delBtn.onclick = () => deletePage(p.page_num);
+      container.appendChild(delBtn);
+    });
+  }
+}
+
+async function createPage(){
+  const title = prompt("Titlu pagina nouă:");
+  if(!title) return;
+  const res = await fetch("/sputnik-create-page", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title})});
+  if(res.ok){
+    const data = await res.json();
+    showToast(`✓ ${data.title} creată! Redirecționare...`);
+    setTimeout(()=>location.href=`/sputnik-panel/${data.page_num}`, 1500);
+  } else {
+    showToast("❌ Eroare: " + await res.text());
+  }
+}
+
+async function deletePage(n){
+  if(!confirm(`Ești sigur că vrei să ștergi Pagina ${n}?`)) return;
+  const res = await fetch(`/sputnik-page/${n}`,{method:"DELETE"});
+  if(res.ok){ showToast("Pagina ștearsă"); await loadPageTabs(); }
+  else showToast("❌ " + await res.text());
 }
 
 function sortByGrade(data){

@@ -2,7 +2,7 @@
 <html lang="ro">
 <head>
 <meta charset="UTF-8">
-<title>Bratva Panel — Sputnik (Pagina 2)</title>
+<title>Bratva Panel — Sputnik</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -339,8 +339,8 @@
   <div class="page-header">
     <div class="page-header-left">
       <div class="page-label">Organizație</div>
-      <div class="page-title">⚡ Sputnik</div>
-      <div class="page-sub">Locurile 1–35 — evidența prezenței, taskurilor și învoirilor membrilor Sputnik.</div>
+      <div class="page-title">⚡ Sputnik <span class="page-badge">Pagina 2</span></div>
+      <div class="page-sub" id="pageSub">Evidența prezenței, taskurilor și învoirilor membrilor Sputnik.</div>
     </div>
     <button class="btn-save" id="saveBtn" onclick="save()">💾 Salvează</button>
   </div>
@@ -349,7 +349,6 @@
   <div class="page-tabs" id="pageTabs">
     <!-- loaded dynamically -->
   </div>
-  <!-- Leader: Create Page Modal -->
   <div id="createPageBar" style="display:none;padding:0 36px 18px;">
     <button class="btn-save" style="background:var(--dark3);border:1px solid var(--border2);color:var(--muted);font-size:11px;padding:8px 18px;" onclick="createPage()">✚ Adaugă Pagină Sputnik</button>
   </div>
@@ -380,6 +379,7 @@
 
 <script>
 let user;
+let PAGE_NUM = 1;
 const grades = ["Knyaz","Polkovnik","Shestyorka","Svyaznoi","Krysha"];
 
 function applyColor(sel){
@@ -389,6 +389,10 @@ function applyColor(sel){
 }
 
 async function init(){
+  // Get page number from URL
+  const urlParts = location.pathname.split("/");
+  PAGE_NUM = parseInt(urlParts[urlParts.length-1]) || 3;
+
   const res = await fetch("/me");
   user = await res.json();
   if(!user){ location.href="/login"; return; }
@@ -397,6 +401,11 @@ async function init(){
     document.getElementById("adminLink").style.display = "";
     document.getElementById("createPageBar").style.display = "";
   }
+  // Update page sub title
+  const startPos = (PAGE_NUM-1)*35+1;
+  const endPos = startPos+34;
+  document.getElementById("pageSub").textContent = `Locurile ${startPos}–${endPos} — evidența prezenței, taskurilor și învoirilor membrilor Sputnik.`;
+
   await loadPageTabs();
   load();
 }
@@ -406,10 +415,10 @@ async function loadPageTabs(){
   const pages = await res.json();
   const container = document.getElementById("pageTabs");
   container.innerHTML = "";
-  const startNums = {1:1,2:36,3:71,4:106};
-  pages.forEach((p,i) => {
+  const startNums = {1:1,2:36};
+  pages.forEach((p) => {
     const a = document.createElement("a");
-    a.className = "page-tab" + (p.page_num === 1 ? " active" : "");
+    a.className = "page-tab" + (p.page_num === PAGE_NUM ? " active" : "");
     const start = startNums[p.page_num] || ((p.page_num-1)*35+1);
     const end = start+34;
     const href = p.page_num === 1 ? "/sputnik-panel" : p.page_num === 2 ? "/sputnik2-panel" : `/sputnik-panel/${p.page_num}`;
@@ -417,10 +426,8 @@ async function loadPageTabs(){
     a.textContent = `⚡ ${p.title} (${start}–${end})`;
     container.appendChild(a);
   });
-  // Add delete button for leader on extra pages
   if(user && user.role === "leader"){
-    const pages2 = await (await fetch("/sputnik-pages")).json();
-    pages2.filter(p=>p.page_num > 2).forEach(p => {
+    pages.filter(p=>p.page_num > 2).forEach(p => {
       const delBtn = document.createElement("button");
       delBtn.textContent = "🗑";
       delBtn.title = `Șterge ${p.title}`;
@@ -432,7 +439,7 @@ async function loadPageTabs(){
 }
 
 async function createPage(){
-  const title = prompt("Titlu pagina nouă (ex: Pagina 3):");
+  const title = prompt("Titlu pagina nouă:");
   if(!title) return;
   const res = await fetch("/sputnik-create-page", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title})});
   if(res.ok){
@@ -447,8 +454,10 @@ async function createPage(){
 async function deletePage(n){
   if(!confirm(`Ești sigur că vrei să ștergi Pagina ${n}? Datele vor fi pierdute!`)) return;
   const res = await fetch(`/sputnik-page/${n}`,{method:"DELETE"});
-  if(res.ok){ showToast("Pagina ștearsă"); await loadPageTabs(); }
-  else showToast("❌ " + await res.text());
+  if(res.ok){
+    showToast("Pagina ștearsă");
+    setTimeout(()=>location.href="/sputnik-panel", 1200);
+  } else showToast("❌ " + await res.text());
 }
 
 function sortByGrade(data){
@@ -485,11 +494,11 @@ function createRows(data=[]){
   const tbody = document.getElementById("tableBody");
   let html = "";
   const isLeader = user.role === "leader";
-
   const filled = data.filter(d => d.nume && d.nume.trim() !== "");
   const empty  = data.filter(d => !d.nume || d.nume.trim() === "");
   const sorted = [...sortByGrade(filled), ...empty];
   while(sorted.length < 35) sorted.push({});
+  const startPos = (PAGE_NUM-1)*35+1;
 
   for(let i=0;i<35;i++){
     const d = sorted[i]||{};
@@ -500,7 +509,7 @@ function createRows(data=[]){
           <option ${val=="Nu"?"selected":""}>Nu</option>
         </select>`;
       html += `<tr>
-        <td class="row-num">${i+1}</td>
+        <td class="row-num">${startPos+i}</td>
         <td><input value="${d.nume||""}" placeholder="—"></td>
         <td><input value="${d.cnp||""}" placeholder="—"></td>
         <td><input value="${d.telefon||""}" placeholder="—"></td>
@@ -515,7 +524,7 @@ function createRows(data=[]){
       const sv = (v) => `<span class="cell-text ${v?"":"muted"}">${v||"—"}</span>`;
       const dn = (v) => `<span class="danu-text ${v=="Da"?"is-da":v=="Nu"?"is-nu":""}">${v||"—"}</span>`;
       html += `<tr>
-        <td class="row-num">${i+1}</td>
+        <td class="row-num">${startPos+i}</td>
         <td>${sv(d.nume)}</td>
         <td>${sv(d.cnp)}</td>
         <td>${sv(d.telefon)}</td>
@@ -543,15 +552,16 @@ function createRows(data=[]){
 }
 
 async function load(){
-  const res = await fetch("/sputnik");
+  const res = await fetch(`/sputnik-data/${PAGE_NUM}`);
   const data = await res.json();
   createRows(data);
 }
 
 async function save(){
-  await fetch("/sputnik",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(collectData())});
+  await fetch(`/sputnik-data/${PAGE_NUM}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(collectData())});
   showToast();
 }
+
 function showToast(msg){
   const t = document.getElementById("toast");
   t.textContent = msg || "✓ Date salvate cu succes";
