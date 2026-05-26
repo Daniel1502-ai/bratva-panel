@@ -462,6 +462,119 @@
     padding: 6px 10px; display: block; user-select: none;
   }
 
+  /* Recuperare button */
+  .btn-recuperare {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    background: rgba(192,57,43,0.15);
+    color: var(--red-bright);
+    border: 1px solid var(--red);
+    padding: 5px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+  .btn-recuperare:hover {
+    background: var(--red);
+    color: white;
+    box-shadow: 0 0 12px var(--red-glow);
+  }
+
+  /* Recuperari section */
+  .section-header {
+    margin: 0 36px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 5px;
+    color: var(--red-bright);
+    text-shadow: 0 0 20px var(--red-glow);
+  }
+  .section-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--red), transparent);
+  }
+  .section-count {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .recuperari-wrap {
+    margin: 0 36px 48px;
+    border: 1px solid rgba(192,57,43,0.3);
+    border-radius: 4px;
+    overflow: hidden;
+    background: rgba(192,57,43,0.04);
+  }
+  .recuperari-wrap table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .recuperari-wrap thead tr {
+    background: rgba(192,57,43,0.1);
+    border-bottom: 1px solid rgba(192,57,43,0.3);
+  }
+  .recuperari-wrap th {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--red-bright);
+    padding: 14px 16px;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .recuperari-wrap th:first-child { padding-left: 20px; }
+  .recuperari-wrap tbody tr {
+    border-bottom: 1px solid rgba(192,57,43,0.15);
+    transition: background 0.15s;
+  }
+  .recuperari-wrap tbody tr:last-child { border-bottom: none; }
+  .recuperari-wrap tbody tr:hover { background: rgba(192,57,43,0.06); }
+  .recuperari-empty {
+    padding: 32px;
+    text-align: center;
+    color: var(--muted);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .btn-restore {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    background: rgba(255,255,255,0.05);
+    color: var(--muted);
+    border: 1px solid var(--border2);
+    padding: 5px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+  .btn-restore:hover {
+    background: rgba(255,255,255,0.12);
+    color: var(--text);
+    border-color: var(--text);
+  }
+
   /* Toast */
   .toast {
     position: fixed;
@@ -546,6 +659,7 @@
         <th>Grad</th>
         <th style="text-align:center">Învoire</th>
         <th style="text-align:center">Amendă</th>
+        <th style="text-align:center">Recuperare</th>
       </tr>
     </thead>
     <tbody id="tableBody"></tbody>
@@ -554,8 +668,37 @@
 
 <div class="toast" id="toast">✓ Date salvate cu succes</div>
 
+<!-- RECUPERARI SECTION -->
+<div class="section-header">
+  <div class="section-title">♻ Recuperări</div>
+  <div class="section-line"></div>
+  <div class="section-count" id="recuperariCount">0 membri</div>
+</div>
+<div class="recuperari-wrap" id="recuperariWrap">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Nume</th>
+        <th>CNP</th>
+        <th>Telefon</th>
+        <th style="text-align:center">Mască</th>
+        <th style="text-align:center">Bandană</th>
+        <th style="text-align:center">Mănușă</th>
+        <th style="text-align:center">Sindicat</th>
+        <th>Grad</th>
+        <th style="text-align:center">Acțiune</th>
+      </tr>
+    </thead>
+    <tbody id="recuperariBody">
+      <tr><td colspan="10" class="recuperari-empty">⊘ Niciun membru în recuperare</td></tr>
+    </tbody>
+  </table>
+</div>
+
 <script>
 let user;
+let recuperariData = []; // Members moved to recuperare
 
 const grades = ["Pakhan","Spetsnaz","Sovetink","Brigadir","Obshchak","Vor v Zakone"];
 
@@ -571,15 +714,12 @@ async function init(){
 }
 
 function sortByGrade(data){
-  // grades[0] = cel mai mare grad
   return [...data].sort((a, b) => {
     const hasA = a.nume && a.nume.trim() !== "";
     const hasB = b.nume && b.nume.trim() !== "";
-    // Rândurile goale merg la sfârșit
     if(!hasA && !hasB) return 0;
     if(!hasA) return 1;
     if(!hasB) return -1;
-    // Sortare după grad (indexul mai mic = grad mai mare)
     const iA = grades.indexOf(a.grad);
     const iB = grades.indexOf(b.grad);
     const rankA = iA === -1 ? grades.length : iA;
@@ -588,13 +728,82 @@ function sortByGrade(data){
   });
 }
 
+function moveToRecuperare(rowIndex){
+  const rows = document.querySelectorAll("#tableBody tr");
+  const row = rows[rowIndex];
+  const inputs = row.querySelectorAll("input:not([type='checkbox']), select");
+  const checks = row.querySelectorAll("input[type='checkbox']");
+
+  const member = {
+    nume: inputs[0].value,
+    cnp: inputs[1].value,
+    telefon: inputs[2].value,
+    masca: checks[0]?.checked || false,
+    bandana: checks[1]?.checked || false,
+    manusa: checks[2]?.checked || false,
+    sindicat: checks[3]?.checked || false,
+    grad: inputs[3].value
+  };
+
+  if(!member.nume || member.nume.trim() === "") return;
+
+  recuperariData.push(member);
+
+  // Clear this row from the table
+  inputs[0].value = "";
+  inputs[1].value = "";
+  inputs[2].value = "";
+  checks.forEach(c => {
+    c.checked = false;
+    c.closest(".check-wrap").classList.remove("checked");
+    c.closest(".check-wrap").querySelector(".check-icon").textContent = "";
+  });
+
+  renderRecuperari();
+}
+
+function restoreFromRecuperare(index){
+  recuperariData.splice(index, 1);
+  renderRecuperari();
+}
+
+function renderRecuperari(){
+  const tbody = document.getElementById("recuperariBody");
+  const count = recuperariData.length;
+  document.getElementById("recuperariCount").textContent = count + (count === 1 ? " membru" : " membri");
+
+  if(count === 0){
+    tbody.innerHTML = `<tr><td colspan="10" class="recuperari-empty">⊘ Niciun membru în recuperare</td></tr>`;
+    return;
+  }
+
+  const isLeader = user.role === "leader";
+  const sc = (val) => `<div class="check-static ${val?"checked":""}">${val?"✓":""}</div>`;
+
+  let html = "";
+  recuperariData.forEach((d, i) => {
+    html += `<tr>
+      <td class="row-num">${i+1}</td>
+      <td><span class="cell-text">${d.nume||"—"}</span></td>
+      <td><span class="cell-text muted">${d.cnp||"—"}</span></td>
+      <td><span class="cell-text muted">${d.telefon||"—"}</span></td>
+      <td class="checkbox-cell">${sc(d.masca)}</td>
+      <td class="checkbox-cell">${sc(d.bandana)}</td>
+      <td class="checkbox-cell">${sc(d.manusa)}</td>
+      <td class="checkbox-cell">${sc(d.sindicat)}</td>
+      <td><span class="grade-text">${d.grad||grades[0]}</span></td>
+      <td class="checkbox-cell">${isLeader ? `<button class="btn-restore" onclick="restoreFromRecuperare(${i})">↩ Restaurare</button>` : `<span style="color:var(--red-bright);font-size:12px;letter-spacing:1px">RECUPERARE</span>`}</td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+}
+
 function createRows(data=[]){
   const tbody = document.getElementById("tableBody");
   let html = "";
 
   const isLeader = user.role === "leader";
 
-  // Păstrăm exact 35 de sloturi, sortăm ce e completat
   const filled = data.filter(d => d.nume && d.nume.trim() !== "");
   const empty  = data.filter(d => !d.nume || d.nume.trim() === "");
   const sorted = [...sortByGrade(filled), ...empty];
@@ -621,6 +830,7 @@ function createRows(data=[]){
         <td><select class="grade-select">${grades.map(g=>`<option ${d.grad===g?"selected":""}>${g}</option>`).join("")}</select></td>
         <td class="checkbox-cell"><span class="cell-text ${d.invoire==="Da"?"":"muted"}" style="text-align:center;color:${d.invoire==="Da"?"var(--red-bright)":"var(--muted)"}">${d.invoire||"Nu"}</span></td>
         <td class="checkbox-cell" style="text-align:center">${d.amendaActiva?`<span title="Amendă activă" style="font-size:18px;cursor:pointer" onclick="location.href='/amenzi'">⚠️</span>`:`<span style="color:var(--muted)">—</span>`}</td>
+        <td class="checkbox-cell"><button class="btn-recuperare" onclick="moveToRecuperare(${i})">↓ Recuperare</button></td>
       </tr>`;
     } else {
       const sc = (val) => `<div class="check-static ${val?"checked":""}">${val?"✓":""}</div>`;
@@ -637,13 +847,13 @@ function createRows(data=[]){
         <td><span class="grade-text">${d.grad||grades[0]}</span></td>
         <td class="checkbox-cell"><span class="cell-text" style="text-align:center;color:${d.invoire==="Da"?"var(--red-bright)":"var(--muted)"}">${d.invoire||"Nu"}</span></td>
         <td class="checkbox-cell" style="text-align:center">${d.amendaActiva?`<span title="Amendă activă" style="font-size:18px;cursor:pointer" onclick="location.href='/amenzi'">⚠️</span>`:`<span style="color:var(--muted)">—</span>`}</td>
+        <td class="checkbox-cell"><span style="color:var(--muted)">—</span></td>
       </tr>`;
     }
   }
 
   tbody.innerHTML = html;
 
-  // Wire checkboxes (leader only)
   if(isLeader){
     document.querySelectorAll(".check-wrap input[type='checkbox']").forEach(cb=>{
       cb.addEventListener("change", ()=>{
@@ -653,7 +863,6 @@ function createRows(data=[]){
       });
     });
 
-    // Re-sort live când se schimbă gradul
     document.querySelectorAll("select.grade-select").forEach(sel=>{
       sel.addEventListener("change", ()=> {
         const data = collectData();
@@ -665,6 +874,8 @@ function createRows(data=[]){
   if(!isLeader){
     document.getElementById("saveBtn").style.display="none";
   }
+
+  renderRecuperari();
 }
 
 function collectData(){
@@ -690,12 +901,18 @@ function collectData(){
 async function load(){
   const res = await fetch("/bratva");
   const data = await res.json();
-  createRows(data);
+  // Separate recuperare members from normal members
+  recuperariData = data.filter(d => d.recuperare === 1 && d.nume && d.nume.trim() !== "");
+  const normalData = data.filter(d => !d.recuperare);
+  createRows(normalData);
 }
 
 async function save(){
-  const data = collectData();
-  await fetch("/bratva",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+  const mainData = collectData();
+  // Merge: normal members + recuperare members (flagged)
+  const recuperareFlagged = recuperariData.map(d => ({ ...d, recuperare: true }));
+  const allData = [...mainData, ...recuperareFlagged];
+  await fetch("/bratva",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(allData)});
   showToast();
 }
 
