@@ -177,6 +177,13 @@ let user;
 function addDays(s,n){ const d=new Date(s+"T00:00:00"); d.setDate(d.getDate()+parseInt(n,10)); return d.toISOString().substring(0,10); }
 function todayStr(){ return new Date().toISOString().substring(0,10); }
 function nowTime(){ const d=new Date(); return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); }
+function invoireExpiredMoreThan24h(it){
+  if(!it.endDate) return false;
+  const ora = it.ora || '23:59';
+  const end = new Date(`${it.endDate}T${ora}:00`);
+  if(Number.isNaN(end.getTime())) return false;
+  return Date.now() - end.getTime() >= 24 * 60 * 60 * 1000;
+}
 function recalcEnd(){
   const s=document.getElementById("fStart").value;
   const n=parseInt(document.getElementById("fDays").value,10);
@@ -197,7 +204,18 @@ async function init(){
 }
 
 async function load(){
-  const r=await fetch("/invoiri"); const list=await r.json();
+  const r=await fetch("/invoiri"); let list=await r.json();
+
+  // Șterge automat învoirile la 24h după ce au expirat.
+  // Exemplu: dacă învoirea se termină pe 10.06 la ora 18:00, se șterge după 11.06 ora 18:00.
+  const expiredForDeletion = list.filter(invoireExpiredMoreThan24h);
+  if(expiredForDeletion.length){
+    await Promise.allSettled(expiredForDeletion.map(it =>
+      fetch("/invoiri/"+it.id,{method:"DELETE"})
+    ));
+    list = list.filter(it => !invoireExpiredMoreThan24h(it));
+  }
+
   const tbody=document.getElementById("listBody");
   if(!list.length){
     tbody.innerHTML=`<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📅</div><p>Nicio învoire postată.</p></div></td></tr>`;
