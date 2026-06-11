@@ -290,6 +290,75 @@
   .radar b { width: 80%; height: 80%; }
   @keyframes radar-sweep { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
 
+  /* ── LEADERBOARD ── */
+  .leaderboard-wrap {
+    margin: 0 36px 48px;
+    background: var(--dark2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+  .leaderboard-wrap::before {
+    content: ''; position: absolute; top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--red-bright);
+    box-shadow: 0 0 12px var(--red-glow);
+    opacity: 0.7;
+  }
+  .lb-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--dark3);
+  }
+  .lb-header-left { display: flex; align-items: center; gap: 10px; }
+  .lb-title { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 3px; color: var(--red-bright); }
+  .lb-subtitle { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+  .btn-clear-lb {
+    background: transparent; border: 1px solid var(--border); color: var(--muted);
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px;
+    letter-spacing: 2px; text-transform: uppercase; padding: 7px 16px;
+    cursor: pointer; transition: all 0.2s; border-radius: 2px;
+  }
+  .btn-clear-lb:hover { border-color: var(--red-bright); color: var(--red-bright); background: rgba(192,57,43,0.1); }
+  .lb-table { width: 100%; border-collapse: collapse; }
+  .lb-table thead tr { border-bottom: 1px solid var(--border); }
+  .lb-table th {
+    padding: 10px 24px; text-align: left;
+    font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted);
+    font-weight: 600;
+  }
+  .lb-table th.right { text-align: right; }
+  .lb-table td {
+    padding: 11px 24px;
+    font-size: 13px; letter-spacing: 1px; color: var(--text);
+    border-bottom: 1px solid #1a1a1a;
+  }
+  .lb-table td.right { text-align: right; }
+  .lb-table tr:last-child td { border-bottom: none; }
+  .lb-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .lb-rank { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--muted); letter-spacing: 2px; }
+  .lb-rank.gold   { color: #f1c40f; text-shadow: 0 0 10px #f1c40f88; }
+  .lb-rank.silver { color: #bdc3c7; text-shadow: 0 0 10px #bdc3c788; }
+  .lb-rank.bronze { color: #e67e22; text-shadow: 0 0 10px #e67e2288; }
+  .lb-user { font-weight: 700; letter-spacing: 1px; }
+  .lb-time {
+    font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px;
+    color: var(--green); text-shadow: 0 0 10px rgba(0,255,136,0.4);
+  }
+  .lb-time.top1 { color: #f1c40f; text-shadow: 0 0 14px #f1c40f88; }
+  .lb-date { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+  .lb-empty {
+    padding: 36px 24px; text-align: center;
+    font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+  }
+  .lb-new-entry { animation: lb-flash 1.2s ease; }
+  @keyframes lb-flash {
+    0%   { background: rgba(0,255,136,0.15); }
+    100% { background: transparent; }
+  }
+
   /* ── INSTRUCTIONS ── */
   .instructions-bar {
     margin: 0 36px 48px;
@@ -449,6 +518,33 @@ vec3 firewall();
     <span class="key-badge">R</span> restart
   </div>
 
+  <div class="section-label"><span>Top 10 Timpi</span></div>
+
+  <div class="leaderboard-wrap">
+    <div class="lb-header">
+      <div class="lb-header-left">
+        <div>
+          <div class="lb-title">LEADERBOARD</div>
+          <div class="lb-subtitle">Cele mai bune timpuri · Bank Hack Simulator</div>
+        </div>
+      </div>
+      <button class="btn-clear-lb" onclick="clearLeaderboard()">✕ &nbsp;RESETEAZĂ</button>
+    </div>
+    <table class="lb-table">
+      <thead>
+        <tr>
+          <th style="width:60px">#</th>
+          <th>Jucător</th>
+          <th class="right">Timp</th>
+          <th class="right">Data</th>
+        </tr>
+      </thead>
+      <tbody id="lbBody">
+        <tr><td colspan="4" class="lb-empty">Niciun timp înregistrat încă.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
 </div>
 
 <script>
@@ -458,9 +554,11 @@ async function initPage(){
   const user = await res.json();
   if(!user){ location.href="/login"; return; }
   document.getElementById("navUsername").textContent = user.username;
+  currentUsername = user.username;
   if(user.role && user.role.toLowerCase() === "leader"){
     document.getElementById("adminLink").style.display = "";
   }
+  loadLeaderboard();
 }
 async function logout(){
   await fetch("/logout", { method: "POST" }).catch(()=>{});
@@ -592,13 +690,78 @@ function moveRightSelection(dir){
 
 function success(){
   running=false; clearInterval(tick);
+  const elapsed = 29 - time;
   timerEl.textContent='ACCESS'; document.querySelector('.bar-title').textContent='SYSTEM BREACHED';
   tone(880,120,'sine',.08); setTimeout(()=>tone(1320,170,'sine',.08),120);
+  saveScore(elapsed);
 }
 function fail(){
   running=false; clearInterval(tick);
   timerEl.textContent='LOCK'; document.querySelector('.bar-title').textContent='TRACE FAILED';
   tone(90,500,'sawtooth',.08);
+}
+
+// ── LEADERBOARD ──
+let currentUsername = '—';
+
+async function saveScore(elapsed){
+  try {
+    const raw = await window.storage.get('hack-leaderboard', true).catch(()=>null);
+    let entries = [];
+    if(raw && raw.value) entries = JSON.parse(raw.value);
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('ro-RO', {day:'2-digit',month:'2-digit',year:'2-digit'});
+    entries.push({ user: currentUsername, time: elapsed, date: dateStr, ts: Date.now() });
+
+    // Sortare: timp ascending (mai mic = mai bun), păstrăm top 10
+    entries.sort((a,b) => a.time - b.time);
+    entries = entries.slice(0, 10);
+
+    await window.storage.set('hack-leaderboard', JSON.stringify(entries), true);
+    renderLeaderboard(entries, elapsed);
+  } catch(e) {
+    console.error('Leaderboard save error:', e);
+  }
+}
+
+async function loadLeaderboard(){
+  try {
+    const raw = await window.storage.get('hack-leaderboard', true).catch(()=>null);
+    if(!raw || !raw.value) return;
+    const entries = JSON.parse(raw.value);
+    renderLeaderboard(entries, null);
+  } catch(e) {}
+}
+
+async function clearLeaderboard(){
+  if(!confirm('Ești sigur că vrei să resetezi leaderboard-ul?')) return;
+  try {
+    await window.storage.delete('hack-leaderboard', true);
+    document.getElementById('lbBody').innerHTML = '<tr><td colspan="4" class="lb-empty">Niciun timp înregistrat încă.</td></tr>';
+  } catch(e) {}
+}
+
+function renderLeaderboard(entries, newTime){
+  const tbody = document.getElementById('lbBody');
+  if(!entries || entries.length === 0){
+    tbody.innerHTML = '<tr><td colspan="4" class="lb-empty">Niciun timp înregistrat încă.</td></tr>';
+    return;
+  }
+  const rankClass = ['gold','silver','bronze'];
+  tbody.innerHTML = entries.map((e, i) => {
+    const isNew = newTime !== null && e.time === newTime && e.user === currentUsername;
+    const rc = rankClass[i] || '';
+    const tc = i === 0 ? 'top1' : '';
+    const secs = e.time;
+    const timeStr = `${String(Math.floor(secs/60)).padStart(2,'0')}:${String(secs%60).padStart(2,'0')}`;
+    return `<tr class="${isNew ? 'lb-new-entry' : ''}">
+      <td><span class="lb-rank ${rc}">${i+1}</span></td>
+      <td><span class="lb-user">${e.user}</span></td>
+      <td class="right"><span class="lb-time ${tc}">${timeStr}</span></td>
+      <td class="right"><span class="lb-date">${e.date}</span></td>
+    </tr>`;
+  }).join('');
 }
 
 document.addEventListener('keydown',e=>{
