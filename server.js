@@ -721,6 +721,7 @@ app.get('/service-pontaje',    (req, res) => res.sendFile('service-pontaje.html'
 app.get('/amenzi',             (req, res) => res.sendFile('amenzi.html',           { root: 'public' }));
 app.get('/service-amenzi',     (req, res) => res.sendFile('service-amenzi.html',   { root: 'public' }));
 app.get('/locatii',            (req, res) => res.sendFile('locatii.html',          { root: 'public' }));
+app.get('/hack',               (req, res) => res.sendFile('hack.html',              { root: 'public' }));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => { console.log(`Server running on port ${PORT}`); });
