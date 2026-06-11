@@ -130,6 +130,13 @@ try { db.exec(`ALTER TABLE invoiri ADD COLUMN ora TEXT DEFAULT NULL`); } catch {
 try { db.exec(`ALTER TABLE notifications ADD COLUMN org TEXT DEFAULT 'bratva'`); } catch {}
 
 // AMENZI TABLE
+db.exec(`CREATE TABLE IF NOT EXISTS hack_leaderboard (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL,
+    time_seconds INTEGER NOT NULL,
+    achieved_at TEXT DEFAULT (datetime('now','localtime'))
+)`);
+
 db.exec(`CREATE TABLE IF NOT EXISTS amenzi (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     cnp TEXT NOT NULL,
@@ -722,6 +729,39 @@ app.get('/amenzi',             (req, res) => res.sendFile('amenzi.html',        
 app.get('/service-amenzi',     (req, res) => res.sendFile('service-amenzi.html',   { root: 'public' }));
 app.get('/locatii',            (req, res) => res.sendFile('locatii.html',          { root: 'public' }));
 app.get('/hack',               (req, res) => res.sendFile('hack.html',              { root: 'public' }));
+
+// ── HACK LEADERBOARD API ──
+app.get('/hack-leaderboard', requireAuth, (req, res) => {
+    const rows = db.prepare(`
+        SELECT username, time_seconds, achieved_at
+        FROM hack_leaderboard
+        ORDER BY time_seconds ASC
+        LIMIT 10
+    `).all();
+    res.json(rows);
+});
+
+app.post('/hack-leaderboard', requireAuth, (req, res) => {
+    const { time_seconds } = req.body;
+    const username = req.session.user?.username;
+    if(!username || typeof time_seconds !== 'number' || time_seconds <= 0 || time_seconds > 29) {
+        return res.status(400).json({ error: 'Date invalide' });
+    }
+    db.prepare(`INSERT INTO hack_leaderboard (username, time_seconds) VALUES (?, ?)`).run(username, time_seconds);
+    const rows = db.prepare(`
+        SELECT username, time_seconds, achieved_at
+        FROM hack_leaderboard
+        ORDER BY time_seconds ASC
+        LIMIT 10
+    `).all();
+    res.json(rows);
+});
+
+app.delete('/hack-leaderboard', requireAuth, (req, res) => {
+    if(req.session.user?.role !== 'leader') return res.status(403).json({ error: 'Interzis' });
+    db.prepare(`DELETE FROM hack_leaderboard`).run();
+    res.json({ ok: true });
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => { console.log(`Server running on port ${PORT}`); });

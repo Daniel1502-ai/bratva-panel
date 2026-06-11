@@ -706,19 +706,12 @@ let currentUsername = '—';
 
 async function saveScore(elapsed){
   try {
-    const raw = await window.storage.get('hack-leaderboard', true).catch(()=>null);
-    let entries = [];
-    if(raw && raw.value) entries = JSON.parse(raw.value);
-
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('ro-RO', {day:'2-digit',month:'2-digit',year:'2-digit'});
-    entries.push({ user: currentUsername, time: elapsed, date: dateStr, ts: Date.now() });
-
-    // Sortare: timp ascending (mai mic = mai bun), păstrăm top 10
-    entries.sort((a,b) => a.time - b.time);
-    entries = entries.slice(0, 10);
-
-    await window.storage.set('hack-leaderboard', JSON.stringify(entries), true);
+    const res = await fetch('/hack-leaderboard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ time_seconds: elapsed })
+    });
+    const entries = await res.json();
     renderLeaderboard(entries, elapsed);
   } catch(e) {
     console.error('Leaderboard save error:', e);
@@ -727,9 +720,8 @@ async function saveScore(elapsed){
 
 async function loadLeaderboard(){
   try {
-    const raw = await window.storage.get('hack-leaderboard', true).catch(()=>null);
-    if(!raw || !raw.value) return;
-    const entries = JSON.parse(raw.value);
+    const res = await fetch('/hack-leaderboard');
+    const entries = await res.json();
     renderLeaderboard(entries, null);
   } catch(e) {}
 }
@@ -737,7 +729,7 @@ async function loadLeaderboard(){
 async function clearLeaderboard(){
   if(!confirm('Ești sigur că vrei să resetezi leaderboard-ul?')) return;
   try {
-    await window.storage.delete('hack-leaderboard', true);
+    await fetch('/hack-leaderboard', { method: 'DELETE' });
     document.getElementById('lbBody').innerHTML = '<tr><td colspan="4" class="lb-empty">Niciun timp înregistrat încă.</td></tr>';
   } catch(e) {}
 }
@@ -750,16 +742,17 @@ function renderLeaderboard(entries, newTime){
   }
   const rankClass = ['gold','silver','bronze'];
   tbody.innerHTML = entries.map((e, i) => {
-    const isNew = newTime !== null && e.time === newTime && e.user === currentUsername;
+    const isNew = newTime !== null && e.time_seconds === newTime && e.username === currentUsername;
     const rc = rankClass[i] || '';
     const tc = i === 0 ? 'top1' : '';
-    const secs = e.time;
+    const secs = e.time_seconds;
     const timeStr = `${String(Math.floor(secs/60)).padStart(2,'0')}:${String(secs%60).padStart(2,'0')}`;
+    const dateStr = e.achieved_at ? e.achieved_at.substring(0,10) : '';
     return `<tr class="${isNew ? 'lb-new-entry' : ''}">
       <td><span class="lb-rank ${rc}">${i+1}</span></td>
-      <td><span class="lb-user">${e.user}</span></td>
+      <td><span class="lb-user">${e.username}</span></td>
       <td class="right"><span class="lb-time ${tc}">${timeStr}</span></td>
-      <td class="right"><span class="lb-date">${e.date}</span></td>
+      <td class="right"><span class="lb-date">${dateStr}</span></td>
     </tr>`;
   }).join('');
 }
