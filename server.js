@@ -747,7 +747,18 @@ app.post('/hack-leaderboard', requireAuth, (req, res) => {
     if(!username || typeof time_seconds !== 'number' || time_seconds <= 0 || time_seconds > 29) {
         return res.status(400).json({ error: 'Date invalide' });
     }
-    db.prepare(`INSERT INTO hack_leaderboard (username, time_seconds) VALUES (?, ?)`).run(username, time_seconds);
+    // Verifică dacă userul are deja un timp salvat
+    const existing = db.prepare(`SELECT id, time_seconds FROM hack_leaderboard WHERE username = ?`).get(username);
+    if(existing) {
+        // Updatează doar dacă noul timp e mai bun (mai mic)
+        if(time_seconds < existing.time_seconds) {
+            db.prepare(`UPDATE hack_leaderboard SET time_seconds = ?, achieved_at = datetime('now','localtime') WHERE id = ?`).run(time_seconds, existing.id);
+        }
+        // Dacă e mai prost sau egal, nu facem nimic
+    } else {
+        // Userul nu are niciun timp — îl inserăm
+        db.prepare(`INSERT INTO hack_leaderboard (username, time_seconds) VALUES (?, ?)`).run(username, time_seconds);
+    }
     const rows = db.prepare(`
         SELECT username, time_seconds, achieved_at
         FROM hack_leaderboard
