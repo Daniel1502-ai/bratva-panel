@@ -6,7 +6,11 @@ const bcrypt = require("bcrypt");
 const path = require("path");
 
 const app = express();
-const dbPath = process.env.DB_PATH || path.join(__dirname, "database.db");
+const dbPath =
+  process.env.DB_PATH ||
+  (process.env.RAILWAY_VOLUME_MOUNT_PATH
+    ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, "database.db")
+    : path.join(__dirname, "database.db"));
 const db = new Database(dbPath);
 
 // ── DISCORD WEBHOOK ──
