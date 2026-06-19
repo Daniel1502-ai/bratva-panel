@@ -45,25 +45,6 @@
   .hero-label{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--red-bright);margin-bottom:6px}
   .hero-title{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:6px;line-height:1}
   .hero-sub{font-size:14px;letter-spacing:1px;color:var(--muted);margin-top:6px}
-  /* Notif */
-  .notif-wrap{position:absolute;top:0;right:0;}
-  .notif-btn{position:relative;background:var(--dark2);border:1px solid var(--border2);color:var(--text);width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;transition:.2s}
-  .notif-btn:hover{border-color:var(--red);box-shadow:0 0 16px var(--red-glow);color:var(--red-bright)}
-  .notif-badge{position:absolute;top:-4px;right:-4px;background:#e74c3c;color:#fff;font-size:11px;font-weight:700;min-width:20px;height:20px;border-radius:10px;display:none;align-items:center;justify-content:center;padding:0 5px}
-  .notif-badge.show{display:flex}
-  .notif-panel{position:absolute;top:54px;right:0;width:360px;max-height:480px;background:var(--dark2);border:1px solid var(--border2);border-radius:6px;box-shadow:0 16px 48px rgba(0,0,0,.7);overflow:hidden;display:none;z-index:300}
-  .notif-panel.show{display:flex;flex-direction:column}
-  .notif-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--dark3)}
-  .notif-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:3px;color:var(--red-bright)}
-  .notif-mark{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;transition:.15s}
-  .notif-mark:hover{color:var(--red-bright)}
-  .notif-list{overflow-y:auto;max-height:400px}
-  .notif-item{padding:12px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:.15s}
-  .notif-item:hover{background:rgba(255,255,255,.025)}
-  .notif-item.unread{background:rgba(192,57,43,.08);border-left:2px solid var(--red-bright)}
-  .notif-msg{font-size:13px;font-weight:500;color:var(--text)}
-  .notif-time{font-size:10px;color:var(--muted);margin-top:3px}
-  .notif-empty{padding:36px 18px;text-align:center;color:var(--muted);font-size:13px}
   /* Faction tabs */
   .faction-tabs{display:flex;gap:0;margin-bottom:28px;border:1px solid var(--border2);border-radius:4px;overflow:hidden;width:fit-content}
   .faction-tab{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:10px 24px;background:transparent;color:var(--muted);border:none;cursor:pointer;transition:.15s;border-right:1px solid var(--border2)}
@@ -150,16 +131,6 @@
     <div class="hero-label">Gestionare Sancțiuni</div>
     <div class="hero-title">⚠️ Amenzi</div>
     <div class="hero-sub">Evidența amenzilor membrilor Bratva și Sputnik.</div>
-    <div class="notif-wrap">
-      <button class="notif-btn" onclick="toggleNotif(event)">🔔<span class="notif-badge" id="notifBadge">0</span></button>
-      <div class="notif-panel" id="notifPanel">
-        <div class="notif-head">
-          <div class="notif-title">Notificări</div>
-          <button class="notif-mark" onclick="markAllRead()">Marchează tot</button>
-        </div>
-        <div class="notif-list" id="notifList"></div>
-      </div>
-    </div>
   </div>
 
   <!-- Faction filter tabs -->
@@ -218,8 +189,6 @@ async function init(){
     await loadMembers();
   }
   loadAmenzi();
-  loadNotifCount();
-  setInterval(loadNotifCount,30000);
   setTimeout(scrollToHash,600);
 }
 
@@ -316,7 +285,6 @@ async function stergeAmenda(id){ if(!confirm("Ștergi amenda?")) return; await f
 function scrollToHash(){ if(!location.hash) return; const el=document.querySelector(location.hash); if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.style.outline='2px solid var(--red-bright)';setTimeout(()=>el.style.outline='',2000);} }
 function esc(s){return(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function showToast(msg,color){const t=document.getElementById("toast");t.textContent=msg;t.style.borderColor=color||"var(--red)";t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3000);}
-async function loadNotifCount(){try{const r=await fetch("/notifications/count");const j=await r.json();const b=document.getElementById("notifBadge");if(j.count>0){b.textContent=j.count>99?"99+":j.count;b.classList.add("show");}else b.classList.remove("show");}catch(e){}}
 async function loadNotifList(){const list=document.getElementById("notifList");list.innerHTML=`<div class="notif-empty">Se încarcă...</div>`;try{const r=await fetch("/notifications");const items=await r.json();if(!items.length){list.innerHTML=`<div class="notif-empty">Nicio notificare.</div>`;return;}list.innerHTML=items.map(n=>{const time=new Date((n.createdAt||"").replace(' ','T')+"Z").toLocaleString('ro-RO');const href=n.amendaId?`/amenzi#amenda-${n.amendaId}`:'#';return `<div class="notif-item ${n.read?'':'unread'}" onclick="markRead(${n.id},this,'${href}')"><div class="notif-msg">${esc(n.message)}</div><div class="notif-time">${time}</div></div>`;}).join("");}catch(e){list.innerHTML=`<div class="notif-empty">Eroare.</div>`;}}
 async function markRead(id,el,href){if(el&&el.classList.contains('unread')){el.classList.remove('unread');await fetch(`/notifications/${id}/read`,{method:"PATCH"}).catch(()=>{});loadNotifCount();}if(href&&href!=='#')location.href=href;}
 async function markAllRead(){await fetch("/notifications/read-all",{method:"POST"}).catch(()=>{});document.querySelectorAll(".notif-item.unread").forEach(e=>e.classList.remove('unread'));loadNotifCount();}
@@ -325,5 +293,7 @@ document.addEventListener("click",(e)=>{const w=document.querySelector(".notif-w
 async function logout(){await fetch("/logout",{method:"POST"}).catch(()=>{});location.href="/login";}
 init();
 </script>
+<script src="sidebar.js"></script>
+<script src="notifications.js"></script>
 </body>
 </html>

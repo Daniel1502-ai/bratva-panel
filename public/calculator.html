@@ -488,6 +488,7 @@
   .arme-item-row {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 10px;
     padding: 4px 0;
   }
@@ -496,12 +497,13 @@
     color: var(--text); min-width: 90px;
   }
   .arme-res {
-    display: flex; gap: 6px; align-items: center; flex: 1;
+    display: flex; gap: 6px; align-items: center; flex: 1 1 220px; flex-wrap: wrap; min-width: 0;
   }
   .arme-tag {
     font-size: 11px; font-weight: 700; letter-spacing: 1px;
     padding: 3px 7px; border-radius: 2px; border: 1px solid;
     white-space: nowrap;
+    max-width: 100%;
   }
   .tag-alu  { background: rgba(52,152,219,0.12); border-color: #3498db; color: #5dade2; }
   .tag-fier { background: rgba(149,165,166,0.12); border-color: #7f8c8d; color: #bdc3c7; }
@@ -512,8 +514,8 @@
     font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 700;
     background: var(--dark4); color: var(--text);
     border: 1px solid var(--border2); border-radius: 3px;
-    padding: 5px 8px; width: 64px; text-align: center;
-    outline: none; -moz-appearance: textfield;
+    padding: 5px 8px; width: 84px; max-width: 100%; text-align: center;
+    outline: none; -moz-appearance: textfield; flex: 0 0 84px;
   }
   .arme-qty::-webkit-inner-spin-button,
   .arme-qty::-webkit-outer-spin-button { -webkit-appearance: none; }
@@ -530,11 +532,15 @@
     display: flex; flex-direction: column; gap: 8px;
   }
   .arme-total-row {
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
   }
-  .arme-total-label { font-size: 12px; font-weight: 700; letter-spacing: 1px; color: var(--muted); }
+  .arme-total-label { font-size: 12px; font-weight: 700; letter-spacing: 1px; color: var(--muted); min-width: 0; }
   .arme-total-val {
     font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px;
+    min-width: 0;
+    max-width: 100%;
+    text-align: right;
+    overflow-wrap: anywhere;
   }
   .arme-total-val.c-alu  { color: #5dade2; }
   .arme-total-val.c-fier { color: #bdc3c7; }
@@ -723,10 +729,10 @@ const SECTIONS = [
   {
     id: "vespucii",
     icon: "🔵",
-    name: "Vespucii",
+    name: "Vespucci",
     items: [
       { name: "Alcool",    price: 12000 },
-      { name: "Marihuana", price: 1900  },
+      { name: "Marijuana", price: 1900  },
       { name: "Stick",     price: 10000 },
     ]
   },
@@ -781,10 +787,10 @@ const SECTIONS = [
   {
     id: "farm-meta",
     icon: "🧪",
-    name: "Metanfetamină",
+    name: "Metamfetamină",
     isFarm: true,
     pricePerUnit: 21000,
-    unit: "Metanfetamină",
+    unit: "Metamfetamină",
     recipe: [
       { name: "Sticlă Roșie",   qty: 1, icon: "🔴" },
       { name: "Sticlă Verde",   qty: 1, icon: "🟢" },
@@ -1291,6 +1297,7 @@ async function logout(){
 
 init();
 </script>
+<script src="sidebar.js"></script>
 <script src="notifications.js"></script>
 </div>
 </body>

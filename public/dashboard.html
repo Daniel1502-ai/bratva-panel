@@ -553,7 +553,7 @@ async function init(){
 
   // Load member counts
   try {
-    const [rb, rs] = await Promise.all([fetch("/bratva"), fetch("/sputnik")]);
+    const [rb, rs] = await Promise.all([fetch("/bratva"), fetch("/sputnik-all")]);
     const bratva = await rb.json();
     const sputnik = await rs.json();
 
@@ -578,6 +578,7 @@ async function logout(){
 init();
 </script>
 
+<script src="sidebar.js"></script>
 <script src="notifications.js"></script>
 </div>
 </div>

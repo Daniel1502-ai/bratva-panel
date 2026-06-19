@@ -3,9 +3,11 @@ const cors = require("cors");
 const session = require("express-session");
 const Database = require("better-sqlite3");
 const bcrypt = require("bcrypt");
+const path = require("path");
 
 const app = express();
-const db = new Database("/app/data/database.db");
+const dbPath = process.env.DB_PATH || path.join(__dirname, "database.db");
+const db = new Database(dbPath);
 
 // ── DISCORD WEBHOOK ──
 const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1503895904934035601/Qdu4p91CB4XpO4bE5a1QsxOtjClIpxY9OgnlGMicx6yvUlaF2Eo5o2oxDlLz0mLG_jkM";
@@ -162,7 +164,7 @@ function checkExpiredTasks() {
 
     const updateTask = db.prepare(`UPDATE tasks SET status='expirat' WHERE id=?`);
     const insertNotif = db.prepare(`INSERT INTO notifications (userId,taskId,message,org) VALUES (?,?,?,?)`);
-    const getUserByName = db.prepare(`SELECT id,org FROM users WHERE username=?`);
+    const getUserByName = db.prepare(`SELECT id,org,role FROM users WHERE username=?`);
 
     for (const task of expiredTasks) {
         updateTask.run(task.id);
@@ -199,6 +201,10 @@ function requireRole(role) {
         if (req.session.user.role.toLowerCase() !== role.toLowerCase()) return res.status(403).send("Interzis");
         next();
     };
+}
+
+function isLeaderUser(user) {
+    return !!user && String(user.role || '').toLowerCase() === 'leader';
 }
 
 app.post("/login", async (req, res) => {
@@ -674,6 +680,24 @@ app.get("/sputnik-data/:n", requireAuth, (req, res) => {
     res.json(result);
 });
 
+// Aggregate GET /sputnik-all
+app.get("/sputnik-all", requireAuth, (req, res) => {
+    let rows = [];
+    for (const n of getSputnikPages()) {
+        ensureSputnikTable(n);
+        rows = rows.concat(
+            db.prepare(`SELECT * FROM ${sputnikTable(n)}`).all().map(r => ({ ...r, sourcePage: n }))
+        );
+    }
+    const today = new Date().toISOString().substring(0, 10);
+    const cnps = rows.map(r => r.cnp).filter(Boolean);
+    const amenziActiva = cnps.length ? db.prepare(
+        `SELECT cnp FROM amenzi WHERE status='activa' AND cnp IN (${cnps.map(()=>'?').join(',')})`
+    ).all(...cnps).map(r => r.cnp) : [];
+    const result = rows.map(r => ({ ...r, amendaActiva: amenziActiva.includes(r.cnp) }));
+    res.json(result);
+});
+
 // Dynamic POST /sputnik-data/:n (save)
 app.post("/sputnik-data/:n", requireRole("leader"), (req, res) => {
     const n = parseInt(req.params.n);
@@ -691,12 +715,76 @@ app.post("/sputnik-data/:n", requireRole("leader"), (req, res) => {
     res.send("OK");
 });
 
+// Aggregate POST /sputnik-all
+app.post("/sputnik-all", requireRole("leader"), (req, res) => {
+    const rows = (Array.isArray(req.body) ? req.body : [])
+        .map(r => ({
+            nume: r.nume || '',
+            cnp: r.cnp || '',
+            telefon: r.telefon || '',
+            grad: r.grad || '',
+            task: r.task || '',
+            taskAvansari: r.taskAvansari || '',
+            invoire: r.invoire || 'Nu',
+            prezenta: r.prezenta || 'Nu'
+        }))
+        .filter(r =>
+            (r.nume && r.nume.trim() !== '') ||
+            (r.cnp && r.cnp.trim() !== '') ||
+            (r.telefon && r.telefon.trim() !== '') ||
+            (r.taskAvansari && r.taskAvansari.trim() !== '')
+        );
+
+    const pageSize = 35;
+    const neededPages = Math.max(1, Math.ceil(rows.length / pageSize));
+    const existingPages = getSputnikPages();
+    const maxExisting = existingPages.length ? Math.max(...existingPages) : 0;
+
+    for (let n = 1; n <= neededPages; n++) {
+        ensureSputnikTable(n);
+        db.prepare("INSERT OR IGNORE INTO sputnik_pages (page_num, title) VALUES (?, ?)").run(n, `Pagina ${n}`);
+    }
+    for (let n = maxExisting + 1; n <= neededPages; n++) {
+        ensureSputnikTable(n);
+        db.prepare("INSERT OR IGNORE INTO sputnik_pages (page_num, title) VALUES (?, ?)").run(n, `Pagina ${n}`);
+    }
+
+    const finalPages = getSputnikPages();
+    for (const n of finalPages) {
+        ensureSputnikTable(n);
+        db.prepare(`DELETE FROM ${sputnikTable(n)}`).run();
+    }
+
+    const stmtCache = new Map();
+    const getStmt = (n) => {
+        if (!stmtCache.has(n)) {
+            stmtCache.set(n, db.prepare(
+                `INSERT INTO ${sputnikTable(n)} (nume,cnp,telefon,grad,task,taskAvansari,invoire,prezenta) VALUES (?,?,?,?,?,?,?,?)`
+            ));
+        }
+        return stmtCache.get(n);
+    };
+
+    rows.forEach((row, index) => {
+        const pageNum = Math.floor(index / pageSize) + 1;
+        getStmt(pageNum).run(
+            row.nume,
+            row.cnp,
+            row.telefon,
+            row.grad,
+            row.task,
+            row.taskAvansari,
+            row.invoire,
+            row.prezenta
+        );
+    });
+
+    res.send("OK");
+});
+
 // Dynamic sputnik panel route (page 3+)
 app.get('/sputnik-panel/:n', requireAuth, (req, res) => {
-    const n = parseInt(req.params.n);
-    const pageExists = db.prepare("SELECT id FROM sputnik_pages WHERE page_num=?").get(n);
-    if (!pageExists) return res.status(404).send("Pagina nu există");
-    res.sendFile('sputnik-dynamic.html', { root: 'public' });
+    res.redirect('/sputnik-panel');
 });
 
 // ---------- SETUP ADMIN ----------
@@ -715,7 +803,7 @@ app.get('/service-login',      (req, res) => res.sendFile('service-login.html', 
 app.get('/dashboard',          (req, res) => res.sendFile('dashboard.html',        { root: 'public' }));
 app.get('/bratva-panel',       (req, res) => res.sendFile('bratva.html',           { root: 'public' }));
 app.get('/sputnik-panel',      (req, res) => res.sendFile('sputnik.html',          { root: 'public' }));
-app.get('/sputnik2-panel',     (req, res) => res.sendFile('sputnik2.html',         { root: 'public' }));
+app.get('/sputnik2-panel',     (req, res) => res.redirect('/sputnik-panel'));
 app.get('/task',               (req, res) => res.sendFile('task.html',             { root: 'public' }));
 app.get('/calculator',         (req, res) => res.sendFile('calculator.html',       { root: 'public' }));
 app.get('/invoiri-panel',      (req, res) => res.sendFile('invoiri.html',          { root: 'public' }));

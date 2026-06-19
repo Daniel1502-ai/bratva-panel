@@ -473,9 +473,9 @@
 // ════════════════════════════════════════════════════════════
 const locations = [
   // idx 0
-  { num: 1,  name: "Parcare Sus",           img: "/images/groove/loc-01.png"  },
+  { num: 1,  name: "Parcare Vagos",           img: "/images/groove/loc-01.png"  },
   // idx 1
-  { num: 2,  name: "Parcare Vagos",         img: "/images/groove/loc-02.png"  },
+  { num: 2,  name: "Parcare Stock",         img: "/images/groove/loc-02.png"  },
   // idx 2
   { num: 3,  name: "Parcare Jos",           img: "/images/groove/loc-03.png"  },
   // idx 3
@@ -501,7 +501,7 @@ const locations = [
   // idx 13
   { num: 14, name: "Case Bila Grove",       img: "/images/groove/caseb.png" },
   // idx 14
-  { num: 15, name: "Arcadius / Hală Grove", img: "/images/groove/hala.png" },
+  { num: 15, name: "Arcade / Hală Grove", img: "/images/groove/hala.png" },
   // idx 15
   { num: 16, name: "Benzinărie LTD",        img: "/images/groove/ltd.png" },
   // idx 16
@@ -580,6 +580,7 @@ async function logout(){ await fetch("/logout",{method:"POST"}).catch(()=>{}); l
 
 init();
 </script>
+<script src="sidebar.js"></script>
 <script src="notifications.js"></script>
 </body>
 </html>
