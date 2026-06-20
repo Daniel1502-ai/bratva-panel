@@ -95,8 +95,12 @@
   @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
   .modal-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:var(--red-bright);margin-bottom:14px;}
   .modal-body{font-size:15px;color:var(--text);line-height:1.7;letter-spacing:.3px;word-break:break-word;}
+  .modal-actions{margin-top:20px;display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;}
   .modal-close{margin-top:20px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;background:transparent;color:var(--muted);border:1px solid var(--border2);padding:8px 18px;border-radius:3px;cursor:pointer;transition:all .15s;}
   .modal-close:hover{color:var(--text);border-color:#444;}
+  .modal-close.no-margin{margin-top:0;}
+  .modal-confirm{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;background:rgba(192,57,43,0.14);color:var(--red-bright);border:1px solid var(--red);padding:8px 18px;border-radius:3px;cursor:pointer;transition:all .15s;}
+  .modal-confirm:hover{background:rgba(192,57,43,0.28);color:#fff;box-shadow:0 0 18px var(--red-glow);}
   .btn-del{background:transparent;color:var(--muted);border:1px solid var(--border2);padding:6px 10px;border-radius:3px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;transition:all .15s;}
   .btn-del:hover{color:var(--red-bright);border-color:var(--red);background:rgba(192,57,43,0.08);}
   .empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
@@ -143,9 +147,9 @@
         <div class="msg error" id="formErr"></div>
         <div class="msg success" id="formOk">✓ Învoire postată</div>
         <div class="field"><label>Data început</label><input type="date" id="fStart"></div>
-        <div class="field"><label>Ora început</label><input type="time" id="fTime" value="08:00"></div>
-        <div class="field"><label>Durată (zile)</label><input type="number" id="fDays" min="1" max="60" value="1"></div>
-        <div class="helper">Sfârșit estimat: <b id="fEnd">—</b></div>
+        <div class="field"><label>Ora început</label><input type="text" id="fStartTime" value="08:00" inputmode="numeric" placeholder="20:00" maxlength="5"></div>
+        <div class="field"><label>Data sfârșit</label><input type="date" id="fEndDate"></div>
+        <div class="field"><label>Ora sfârșit</label><input type="text" id="fEndTime" value="10:00" inputmode="numeric" placeholder="20:00" maxlength="5"></div>
         <div class="field"><label>Motiv</label><textarea id="fReason" placeholder="Motivul învoirii..."></textarea></div>
         <button class="btn-main" onclick="submitInvoire()">📅 Postează învoire</button>
       </div>
@@ -154,7 +158,7 @@
     <div class="panel">
       <div class="panel-head">Învoiri postate</div>
       <table>
-        <thead><tr><th>Membru</th><th>Perioadă</th><th>Ora</th><th>Zile</th><th>Status</th><th>Motiv</th><th></th></tr></thead>
+        <thead><tr><th>Membru</th><th>Data început</th><th>Ora început</th><th>Data sfârșit</th><th>Ora sfârșit</th><th>Status</th><th>Motiv</th><th></th></tr></thead>
         <tbody id="listBody"></tbody>
       </table>
     </div>
@@ -172,22 +176,49 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="deleteModal" onclick="closeDeleteModal(event)">
+  <div class="modal-box">
+    <div class="modal-title">Șterge Învoire</div>
+    <div class="modal-body">Sigur vrei să ștergi această învoire?</div>
+    <div class="modal-actions">
+      <button class="modal-close no-margin" onclick="hideDeleteModal()">Anulează</button>
+      <button class="modal-confirm" onclick="confirmDelete()">Șterge</button>
+    </div>
+  </div>
+</div>
+
 <script>
 let user;
-function addDays(s,n){ const d=new Date(s+"T00:00:00"); d.setDate(d.getDate()+parseInt(n,10)); return d.toISOString().substring(0,10); }
+let pendingDeleteId = null;
 function todayStr(){ return new Date().toISOString().substring(0,10); }
 function nowTime(){ const d=new Date(); return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); }
+function normalizeTimeInput(value){
+  const raw = String(value || '').trim();
+  const match = raw.match(/^(\d{1,2}):(\d{2})$/);
+  if(!match) return null;
+  const hh = Number(match[1]);
+  const mm = Number(match[2]);
+  if(!Number.isInteger(hh) || !Number.isInteger(mm) || hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
+  return `${hh.toString().padStart(2,'0')}:${mm.toString().padStart(2,'0')}`;
+}
+function addHours(timeStr, hours){
+  const [hh, mm] = String(timeStr || "08:00").split(":").map(Number);
+  const d = new Date();
+  d.setHours(hh || 0, mm || 0, 0, 0);
+  d.setHours(d.getHours() + hours);
+  return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+}
+function parseItemStart(it){
+  return new Date(`${it.startDate}T${(it.startTime || it.ora || '00:00')}:00`);
+}
+function parseItemEnd(it){
+  return new Date(`${it.endDate}T${(it.endTime || it.ora || '23:59')}:00`);
+}
 function invoireExpiredMoreThan24h(it){
   if(!it.endDate) return false;
-  const ora = it.ora || '23:59';
-  const end = new Date(`${it.endDate}T${ora}:00`);
+  const end = parseItemEnd(it);
   if(Number.isNaN(end.getTime())) return false;
   return Date.now() - end.getTime() >= 24 * 60 * 60 * 1000;
-}
-function recalcEnd(){
-  const s=document.getElementById("fStart").value;
-  const n=parseInt(document.getElementById("fDays").value,10);
-  document.getElementById("fEnd").textContent = (s && n>0) ? addDays(s,n-1) : "—";
 }
 
 async function init(){
@@ -196,10 +227,19 @@ async function init(){
   document.getElementById("navUsername").textContent=user.username;
   if(user.role && user.role.toLowerCase()==="leader") document.getElementById("adminLink").style.display="";
   document.getElementById("fStart").value = todayStr();
-  document.getElementById("fTime").value = nowTime();
-  document.getElementById("fStart").addEventListener("input",recalcEnd);
-  document.getElementById("fDays").addEventListener("input",recalcEnd);
-  recalcEnd();
+  document.getElementById("fStartTime").value = nowTime();
+  document.getElementById("fEndDate").value = todayStr();
+  document.getElementById("fEndTime").value = addHours(nowTime(), 2);
+  ["fStartTime","fEndTime"].forEach((id) => {
+    const el = document.getElementById(id);
+    el.addEventListener("blur", () => {
+      const normalized = normalizeTimeInput(el.value);
+      if(normalized) el.value = normalized;
+    });
+  });
+  document.getElementById("fStart").addEventListener("input", () => {
+    if(!document.getElementById("fEndDate").value) document.getElementById("fEndDate").value = document.getElementById("fStart").value;
+  });
   load();
 }
 
@@ -218,23 +258,26 @@ async function load(){
 
   const tbody=document.getElementById("listBody");
   if(!list.length){
-    tbody.innerHTML=`<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📅</div><p>Nicio învoire postată.</p></div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">📅</div><p>Nicio învoire postată.</p></div></td></tr>`;
     return;
   }
-  const today=todayStr();
   const isLeader = user.role.toLowerCase()==="leader";
   tbody.innerHTML=list.map(it=>{
+    const startAt = parseItemStart(it);
+    const endAt = parseItemEnd(it);
     let status,cls;
-    if(it.startDate>today){ status="Programată"; cls="upcoming"; }
-    else if(it.endDate>=today){ status="Activă"; cls="active"; }
+    if(startAt.getTime() > Date.now()){ status="Programată"; cls="upcoming"; }
+    else if(endAt.getTime() >= Date.now()){ status="Activă"; cls="active"; }
     else { status="Expirată"; cls="expired"; }
     const canDel = isLeader || it.userId===user.id;
-    const ora = it.ora || '—';
+    const startTime = it.startTime || it.ora || '—';
+    const endTime = it.endTime || it.ora || '—';
     return `<tr>
       <td class="name-cell">${it.nume||it.username}</td>
-      <td>${it.startDate} → ${it.endDate}</td>
-      <td>${ora}</td>
-      <td>${it.durataZile}</td>
+      <td>${it.startDate}</td>
+      <td>${startTime}</td>
+      <td>${it.endDate}</td>
+      <td>${endTime}</td>
       <td><span class="pill ${cls}">${status}</span></td>
       <td class="motiv-cell" onclick="showMotiv(this)" data-motiv="${(it.motiv||'').replace(/"/g,'&quot;')}" title="Click pentru a vedea tot">${it.motiv||'—'}</td>
       <td>${canDel?`<button class="btn-del" onclick="del(${it.id})">🗑</button>`:''}</td>
@@ -244,15 +287,24 @@ async function load(){
 
 async function submitInvoire(){
   const startDate=document.getElementById("fStart").value;
-  const ora=document.getElementById("fTime").value;
-  const durataZile=parseInt(document.getElementById("fDays").value,10);
+  const startTime=normalizeTimeInput(document.getElementById("fStartTime").value);
+  const endDate=document.getElementById("fEndDate").value;
+  const endTime=normalizeTimeInput(document.getElementById("fEndTime").value);
   const motiv=document.getElementById("fReason").value.trim();
   const err=document.getElementById("formErr"); const ok=document.getElementById("formOk");
   err.classList.remove("show"); ok.classList.remove("show");
   if(!startDate){ err.textContent="⚠ Selectează data."; err.classList.add("show"); return; }
-  if(!ora){ err.textContent="⚠ Selectează ora."; err.classList.add("show"); return; }
-  if(!durataZile||durataZile<1){ err.textContent="⚠ Durată invalidă."; err.classList.add("show"); return; }
-  const res=await fetch("/invoiri",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({startDate,ora,durataZile,motiv})});
+  if(!startTime){ err.textContent="⚠ Ora de început trebuie să fie în format 24h, ex: 20:00."; err.classList.add("show"); return; }
+  if(!endDate){ err.textContent="⚠ Selectează data de sfârșit."; err.classList.add("show"); return; }
+  if(!endTime){ err.textContent="⚠ Ora de sfârșit trebuie să fie în format 24h, ex: 20:00."; err.classList.add("show"); return; }
+  document.getElementById("fStartTime").value = startTime;
+  document.getElementById("fEndTime").value = endTime;
+  const startAt = new Date(`${startDate}T${startTime}:00`);
+  const endAt = new Date(`${endDate}T${endTime}:00`);
+  if(Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime()) || endAt.getTime() <= startAt.getTime()){
+    err.textContent="⚠ Sfârșitul trebuie să fie după început."; err.classList.add("show"); return;
+  }
+  const res=await fetch("/invoiri",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({startDate,startTime,endDate,endTime,motiv})});
   if(!res.ok){ err.textContent="⚠ "+(await res.text()); err.classList.add("show"); return; }
   ok.classList.add("show");
   document.getElementById("fReason").value="";
@@ -261,7 +313,25 @@ async function submitInvoire(){
 }
 
 async function del(id){
-  if(!confirm("Ștergi această învoire?")) return;
+  pendingDeleteId = id;
+  document.getElementById("deleteModal").classList.add("open");
+}
+
+function hideDeleteModal(){
+  pendingDeleteId = null;
+  document.getElementById("deleteModal").classList.remove("open");
+}
+
+function closeDeleteModal(e){
+  if(e.target === document.getElementById("deleteModal")){
+    hideDeleteModal();
+  }
+}
+
+async function confirmDelete(){
+  if(pendingDeleteId == null) return;
+  const id = pendingDeleteId;
+  hideDeleteModal();
   const r=await fetch("/invoiri/"+id,{method:"DELETE"});
   if(!r.ok){ showToast("⚠ Eroare"); return; }
   load();

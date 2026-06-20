@@ -30,7 +30,7 @@
 
   const items = [
     { href: "/dashboard", label: "Home", icon: "&#127968;" },
-    { href: "/bratva-panel", label: "Bratva", icon: "&#128273;" },
+    { href: "/bratva-panel", label: "Bratva", icon: "&#128081;" },
     { href: "/sputnik-panel", label: "Sputnik", icon: "&#9889;" },
     { href: "/task", label: "Task", icon: "&#128203;" },
     { href: "/calculator", label: "Calculator", icon: "&#128176;" },

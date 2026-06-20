@@ -125,6 +125,10 @@ db.exec(`CREATE TABLE IF NOT EXISTS invoiri (
     motiv TEXT,
     createdAt TEXT DEFAULT (datetime('now'))
 )`);
+try { db.exec(`ALTER TABLE invoiri ADD COLUMN ora TEXT`); } catch {}
+try { db.exec(`ALTER TABLE invoiri ADD COLUMN startTime TEXT`); } catch {}
+try { db.exec(`ALTER TABLE invoiri ADD COLUMN endTime TEXT`); } catch {}
+try { db.exec(`ALTER TABLE invoiri ADD COLUMN org TEXT DEFAULT 'bratva'`); } catch {}
 db.exec(`CREATE TABLE IF NOT EXISTS service (
     id INTEGER PRIMARY KEY,
     nume TEXT, grad TEXT, pontaj TEXT
@@ -267,9 +271,7 @@ app.post("/register", async (req, res) => {
 // ---------- BRATVA ----------
 app.get("/bratva", requireAuth, (req, res) => {
     const rows = db.prepare("SELECT * FROM bratva").all();
-    const today = new Date().toISOString().substring(0, 10);
-    const active = db.prepare(`SELECT cnp FROM invoiri WHERE startDate<=? AND endDate>=?`).all(today, today);
-    const set = new Set(active.map(r => (r.cnp || '').trim()).filter(Boolean));
+    const set = getActiveInvoireCnps((req.session.user.org || 'bratva').toLowerCase());
     rows.forEach(r => {
         r.invoire = (r.cnp && set.has(r.cnp.trim())) ? "Da" : "Nu";
         const amenda = db.prepare(`SELECT id FROM amenzi WHERE cnp=? AND status='activa' LIMIT 1`).get(r.cnp || '');
@@ -288,9 +290,7 @@ app.post("/bratva", requireRole("leader"), (req, res) => {
 // ---------- SPUTNIK ----------
 app.get("/sputnik", requireAuth, (req, res) => {
     const rows = db.prepare("SELECT * FROM sputnik").all();
-    const today = new Date().toISOString().substring(0, 10);
-    const active = db.prepare(`SELECT cnp FROM invoiri WHERE startDate<=? AND endDate>=?`).all(today, today);
-    const set = new Set(active.map(r => (r.cnp || '').trim()).filter(Boolean));
+    const set = getActiveInvoireCnps((req.session.user.org || 'bratva').toLowerCase());
     rows.forEach(r => {
         r.invoire = (r.cnp && set.has(r.cnp.trim())) ? "Da" : "Nu";
         const amenda = db.prepare(`SELECT id FROM amenzi WHERE cnp=? AND status='activa' LIMIT 1`).get(r.cnp || '');
@@ -309,9 +309,7 @@ app.post("/sputnik", requireRole("leader"), (req, res) => {
 // ---------- SPUTNIK 2 ----------
 app.get("/sputnik2", requireAuth, (req, res) => {
     const rows = db.prepare("SELECT * FROM sputnik2").all();
-    const today = new Date().toISOString().substring(0, 10);
-    const active = db.prepare(`SELECT cnp FROM invoiri WHERE startDate<=? AND endDate>=?`).all(today, today);
-    const set = new Set(active.map(r => (r.cnp || '').trim()).filter(Boolean));
+    const set = getActiveInvoireCnps((req.session.user.org || 'bratva').toLowerCase());
     rows.forEach(r => {
         r.invoire = (r.cnp && set.has(r.cnp.trim())) ? "Da" : "Nu";
         const amenda = db.prepare(`SELECT id FROM amenzi WHERE cnp=? AND status='activa' LIMIT 1`).get(r.cnp || '');
@@ -330,9 +328,7 @@ app.post("/sputnik2", requireRole("leader"), (req, res) => {
 // ---------- SERVICE ----------
 app.get("/service", requireAuth, (req, res) => {
     const rows = db.prepare("SELECT * FROM service").all();
-    const today = new Date().toISOString().substring(0, 10);
-    const active = db.prepare(`SELECT cnp FROM invoiri WHERE startDate<=? AND endDate>=?`).all(today, today);
-    const set = new Set(active.map(r => (r.cnp || '').trim()).filter(Boolean));
+    const set = getActiveInvoireCnps((req.session.user.org || 'bratva').toLowerCase());
     rows.forEach(r => {
         r.invoire = (r.cnp && set.has(r.cnp.trim())) ? "Da" : "Nu";
         const amenda = db.prepare(`SELECT id FROM amenzi WHERE cnp=? AND status='activa' LIMIT 1`).get(r.cnp || '');
@@ -580,24 +576,74 @@ function addDays(dateStr, days) {
     return d.toISOString().substring(0, 10);
 }
 
+function parseInvoireDateTime(dateStr, timeStr, fallbackTime) {
+    if (!dateStr) return null;
+    const safeTime = /^\d{2}:\d{2}$/.test(timeStr || '') ? timeStr : fallbackTime;
+    const value = new Date(`${dateStr}T${safeTime}:00`);
+    return Number.isNaN(value.getTime()) ? null : value;
+}
+
+function getInvoireStart(row) {
+    return parseInvoireDateTime(row.startDate, row.startTime || row.ora, "00:00");
+}
+
+function getInvoireEnd(row) {
+    return parseInvoireDateTime(row.endDate, row.endTime || row.ora, "23:59");
+}
+
+function isInvoireActive(row, now = new Date()) {
+    const start = getInvoireStart(row);
+    const end = getInvoireEnd(row);
+    if (!start || !end) return false;
+    return start.getTime() <= now.getTime() && now.getTime() <= end.getTime();
+}
+
+function getActiveInvoireCnps(org) {
+    const rows = db.prepare(`
+        SELECT cnp, startDate, endDate, startTime, endTime, ora
+        FROM invoiri
+        WHERE COALESCE(org,'bratva')=?
+    `).all(org);
+    return new Set(
+        rows
+            .filter((row) => isInvoireActive(row))
+            .map((row) => (row.cnp || '').trim())
+            .filter(Boolean)
+    );
+}
+
 app.get("/invoiri", requireAuth, (req, res) => {
     const userOrg = (req.session.user.org || 'bratva').toLowerCase();
-    const rows = db.prepare(`SELECT * FROM invoiri WHERE COALESCE(org,'bratva')=? ORDER BY startDate DESC, id DESC`).all(userOrg);
-    const today = new Date().toISOString().substring(0, 10);
-    const list = rows.map(r => ({ ...r, activa: (r.startDate <= today && r.endDate >= today) ? 1 : 0 }));
+    const rows = db.prepare(`
+        SELECT * FROM invoiri
+        WHERE COALESCE(org,'bratva')=?
+        ORDER BY startDate DESC, COALESCE(startTime, ora, '00:00') DESC, id DESC
+    `).all(userOrg);
+    const list = rows.map(r => ({ ...r, activa: isInvoireActive(r) ? 1 : 0 }));
     res.json(list);
 });
 
 app.post("/invoiri", requireAuth, async (req, res) => {
-    const { startDate, ora, durataZile, motiv } = req.body;
-    if (!startDate || !durataZile) return res.status(400).send("Data și durata sunt obligatorii");
-    const dz = parseInt(durataZile, 10);
-    if (isNaN(dz) || dz < 1 || dz > 365) return res.status(400).send("Durată invalidă");
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return res.status(400).send("Dată invalidă");
-
+    const { startDate, startTime, endDate: requestedEndDate, endTime, motiv } = req.body;
     const u = req.session.user;
     const userOrg = (u.org || 'bratva').toLowerCase();
-    const endDate = addDays(startDate, dz);
+    if (!startDate || !startTime || !requestedEndDate || !endTime) {
+        return res.status(400).send("Intervalul complet este obligatoriu");
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(requestedEndDate)) {
+        return res.status(400).send("Dată invalidă");
+    }
+    if (!/^\d{2}:\d{2}$/.test(startTime) || !/^\d{2}:\d{2}$/.test(endTime)) {
+        return res.status(400).send("Oră invalidă");
+    }
+    const startAt = parseInvoireDateTime(startDate, startTime, "00:00");
+    const endAt = parseInvoireDateTime(requestedEndDate, endTime, "23:59");
+    if (!startAt || !endAt) return res.status(400).send("Interval invalid");
+    if (endAt.getTime() <= startAt.getTime()) {
+        return res.status(400).send("Sfârșitul trebuie să fie după început");
+    }
+    const endDate = requestedEndDate;
+    const durataZileValue = Math.max(1, Math.ceil((endAt.getTime() - startAt.getTime()) / (24 * 60 * 60 * 1000)));
 
     let member;
     if (userOrg === 'service') {
@@ -615,8 +661,8 @@ app.post("/invoiri", requireAuth, async (req, res) => {
     const nume = member ? member.nume : u.username;
 
     const result = db.prepare(
-        `INSERT INTO invoiri (userId,username,cnp,nume,startDate,ora,durataZile,endDate,motiv,org) VALUES (?,?,?,?,?,?,?,?,?,?)`
-    ).run(u.id, u.username, u.cnp || '', nume, startDate, ora || null, dz, endDate, (motiv || '').trim(), userOrg);
+        `INSERT INTO invoiri (userId,username,cnp,nume,startDate,startTime,ora,durataZile,endDate,endTime,motiv,org) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`
+    ).run(u.id, u.username, u.cnp || '', nume, startDate, startTime, startTime, durataZileValue, endDate, endTime, (motiv || '').trim(), userOrg);
 
     const leaders = db.prepare(
         `SELECT id FROM users WHERE LOWER(role)='leader' AND (COALESCE(org,'bratva')=? OR username='admin')`
@@ -626,7 +672,7 @@ app.post("/invoiri", requireAuth, async (req, res) => {
         insertNotif.run(l.id, null, `📅 ${nume} a postat o învoire (${startDate} → ${endDate})`, userOrg);
     }
 
-    res.json({ id: result.lastInsertRowid, endDate });
+    res.json({ id: result.lastInsertRowid, endDate, endTime });
 });
 
 app.delete("/invoiri/:id", requireAuth, (req, res) => {
