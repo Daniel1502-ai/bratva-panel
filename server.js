@@ -54,6 +54,7 @@ db.exec(`CREATE TABLE IF NOT EXISTS bratva (
     nume TEXT, cnp TEXT, telefon TEXT,
     masca INTEGER, bandana INTEGER, manusa INTEGER, sindicat INTEGER, grad TEXT
 )`);
+try { db.exec(`ALTER TABLE bratva ADD COLUMN taskSaptamanal TEXT DEFAULT 'Nu'`); } catch {}
 db.exec(`CREATE TABLE IF NOT EXISTS sputnik (
     id INTEGER PRIMARY KEY,
     nume TEXT, cnp TEXT, telefon TEXT, grad TEXT,
@@ -282,8 +283,8 @@ app.get("/bratva", requireAuth, (req, res) => {
 
 app.post("/bratva", requireRole("leader"), (req, res) => {
     db.prepare("DELETE FROM bratva").run();
-    const stmt = db.prepare(`INSERT INTO bratva (nume,cnp,telefon,masca,bandana,manusa,sindicat,grad) VALUES (?,?,?,?,?,?,?,?)`);
-    for (const d of req.body) stmt.run(d.nume, d.cnp, d.telefon, d.masca ? 1 : 0, d.bandana ? 1 : 0, d.manusa ? 1 : 0, d.sindicat ? 1 : 0, d.grad);
+    const stmt = db.prepare(`INSERT INTO bratva (nume,cnp,telefon,masca,bandana,manusa,sindicat,grad,taskSaptamanal) VALUES (?,?,?,?,?,?,?,?,?)`);
+    for (const d of req.body) stmt.run(d.nume, d.cnp, d.telefon, d.masca ? 1 : 0, d.bandana ? 1 : 0, d.manusa ? 1 : 0, d.sindicat ? 1 : 0, d.grad, d.taskSaptamanal || 'Nu');
     res.send("Saved");
 });
 
