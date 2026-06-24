@@ -534,6 +534,9 @@
     align-items: center;
     gap: 14px;
   }
+  .section-header + .recuperari-wrap + .section-header {
+    margin-top: 36px;
+  }
   .section-title {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 28px;
@@ -581,6 +584,10 @@
     white-space: nowrap;
   }
   .recuperari-wrap th:first-child { padding-left: 20px; }
+  .recuperari-wrap td {
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
   .recuperari-wrap tbody tr {
     border-bottom: 1px solid rgba(192,57,43,0.15);
     transition: background 0.15s;
@@ -741,9 +748,38 @@
   </table>
 </div>
 
+<!-- RETIRED SECTION -->
+<div class="section-header">
+  <div class="section-title">✦ Retired</div>
+  <div class="section-line"></div>
+  <div class="section-count" id="retiredCount">0 membri</div>
+</div>
+<div class="recuperari-wrap" id="retiredWrap">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Nume</th>
+        <th>CNP</th>
+        <th>Telefon</th>
+        <th style="text-align:center">Mască</th>
+        <th style="text-align:center">Bandană</th>
+        <th style="text-align:center">Mănușă</th>
+        <th style="text-align:center">Sindicat</th>
+        <th>Grad</th>
+        <th style="text-align:center">Acțiune</th>
+      </tr>
+    </thead>
+    <tbody id="retiredBody">
+      <tr><td colspan="10" class="recuperari-empty">⊘ Niciun membru retired</td></tr>
+    </tbody>
+  </table>
+</div>
+
 <script>
 let user;
 let recuperariData = []; // Members moved to recuperare
+let retiredData = []; // Members moved to retired
 
 const grades = ["Pakhan","Spetsnaz","Sovetink","Brigadir","Obshchak","Vor v Zakone"];
 
@@ -784,6 +820,17 @@ function moveToRecuperare(rowIndex){
   createRows(currentData);
 }
 
+function moveToRetired(rowIndex){
+  const currentData = collectData();
+  const member = currentData[rowIndex];
+
+  if(!member.nume || member.nume.trim() === "") return;
+
+  retiredData.push(member);
+  currentData.splice(rowIndex, 1);
+  createRows(currentData);
+}
+
 function deleteRow(rowIndex){
   const currentData = collectData();
   const member = currentData[rowIndex];
@@ -793,8 +840,17 @@ function deleteRow(rowIndex){
 }
 
 function restoreFromRecuperare(index){
+  const member = recuperariData[index];
+  if(!member) return;
   recuperariData.splice(index, 1);
-  renderRecuperari();
+  createRows([...collectData(), { ...member, recuperare: false, retired: false }]);
+}
+
+function restoreFromRetired(index){
+  const member = retiredData[index];
+  if(!member) return;
+  retiredData.splice(index, 1);
+  createRows([...collectData(), { ...member, recuperare: false, retired: false }]);
 }
 
 function renderRecuperari(){
@@ -823,6 +879,37 @@ function renderRecuperari(){
       <td class="checkbox-cell">${sc(d.sindicat)}</td>
       <td><span class="grade-text">${d.grad||grades[0]}</span></td>
       <td class="checkbox-cell">${isLeader ? `<button class="btn-restore" onclick="restoreFromRecuperare(${i})">↩ Restaurare</button>` : `<span style="color:var(--red-bright);font-size:12px;letter-spacing:1px">RECUPERARE</span>`}</td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+}
+
+function renderRetired(){
+  const tbody = document.getElementById("retiredBody");
+  const count = retiredData.length;
+  document.getElementById("retiredCount").textContent = count + (count === 1 ? " membru" : " membri");
+
+  if(count === 0){
+    tbody.innerHTML = `<tr><td colspan="10" class="recuperari-empty">⊘ Niciun membru retired</td></tr>`;
+    return;
+  }
+
+  const isLeader = user.role === "leader";
+  const sc = (val) => `<div class="check-static ${val?"checked":""}">${val?"✓":""}</div>`;
+
+  let html = "";
+  retiredData.forEach((d, i) => {
+    html += `<tr>
+      <td class="row-num">${i+1}</td>
+      <td><span class="cell-text">${d.nume||"—"}</span></td>
+      <td><span class="cell-text muted">${d.cnp||"—"}</span></td>
+      <td><span class="cell-text muted">${d.telefon||"—"}</span></td>
+      <td class="checkbox-cell">${sc(d.masca)}</td>
+      <td class="checkbox-cell">${sc(d.bandana)}</td>
+      <td class="checkbox-cell">${sc(d.manusa)}</td>
+      <td class="checkbox-cell">${sc(d.sindicat)}</td>
+      <td><span class="grade-text">${d.grad||grades[0]}</span></td>
+      <td class="checkbox-cell">${isLeader ? `<button class="btn-restore" onclick="restoreFromRetired(${i})">↩ Restaurare</button>` : `<span style="color:var(--red-bright);font-size:12px;letter-spacing:1px">RETIRED</span>`}</td>
     </tr>`;
   });
   tbody.innerHTML = html;
@@ -865,6 +952,7 @@ function createRows(data=[]){
         <td class="checkbox-cell">
           <div class="action-cell">
             <button class="btn-recuperare" onclick="moveToRecuperare(${i})">↓ Recuperare</button>
+            <button class="btn-recuperare" onclick="moveToRetired(${i})">↓ Retired</button>
             <button class="btn-delete" onclick="deleteRow(${i})">Șterge</button>
           </div>
         </td>
@@ -919,6 +1007,7 @@ function createRows(data=[]){
   }
 
   renderRecuperari();
+  renderRetired();
 }
 
 function collectData(){
@@ -947,7 +1036,8 @@ async function load(){
   const data = await res.json();
   // Separate recuperare members from normal members
   recuperariData = data.filter(d => d.recuperare === 1 && d.nume && d.nume.trim() !== "");
-  const normalData = data.filter(d => !d.recuperare);
+  retiredData = data.filter(d => d.retired === 1 && d.nume && d.nume.trim() !== "");
+  const normalData = data.filter(d => !d.recuperare && !d.retired);
   createRows(normalData);
 }
 
@@ -955,7 +1045,8 @@ async function save(){
   const mainData = collectData();
   // Merge: normal members + recuperare members (flagged)
   const recuperareFlagged = recuperariData.map(d => ({ ...d, recuperare: true }));
-  const allData = [...mainData, ...recuperareFlagged];
+  const retiredFlagged = retiredData.map(d => ({ ...d, retired: true }));
+  const allData = [...mainData, ...recuperareFlagged, ...retiredFlagged];
   await fetch("/bratva",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(allData)});
   showToast();
 }
