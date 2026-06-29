@@ -242,6 +242,48 @@
     padding: 12px 28px; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;
   }
   .btn-save:hover { background: var(--red-bright); box-shadow: 0 0 20px var(--red-glow); transform: translateY(-1px); }
+  .save-status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 42px;
+    padding: 0 14px;
+    border-radius: 3px;
+    border: 1px solid var(--border2);
+    background: var(--dark3);
+    color: var(--muted);
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+  }
+  .save-status.is-dirty {
+    border-color: #f39c12;
+    color: #f39c12;
+    background: rgba(243,156,18,0.12);
+  }
+  .save-status.is-draft {
+    border-color: #3498db;
+    color: #5dade2;
+    background: rgba(52,152,219,0.12);
+  }
+  .save-status.is-restored {
+    border-color: #8e44ad;
+    color: #c39bd3;
+    background: rgba(142,68,173,0.12);
+  }
+  .save-status.is-saved {
+    border-color: #27ae60;
+    color: #2ecc71;
+    background: rgba(39,174,96,0.14);
+  }
+  .save-status.is-error {
+    border-color: var(--red);
+    color: var(--red-bright);
+    background: rgba(192,57,43,0.14);
+  }
 
   /* ── TABLE ── */
   .table-wrap { margin: 0 36px 48px; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; background: var(--dark2); }
@@ -375,6 +417,7 @@
     </div>
     <div class="page-actions">
       <button class="btn-secondary" id="addRowBtn" onclick="addRow()" style="display:none">✚ Adaugă membru</button>
+      <span class="save-status" id="saveStatus">Sincronizat</span>
       <button class="btn-save" id="saveBtn" onclick="save()">💾 Salvează</button>
     </div>
   </div>
@@ -412,6 +455,18 @@
 let user;
 const grades = ["Knyaz","Polkovnik","Shestyorka","Svyaznoi","Krysha"];
 const gradeOrder = ["KNYAZ","POLKOVNIK","SHESTYORKA","SVYAZNOI","KRYSHA"];
+const INVOIRE_REFRESH_MS = 15000;
+const SPUTNIK_DRAFT_KEY = "bratva-panel-sputnik-draft-v1";
+let invoireRefreshTimer = null;
+let draftSaveTimer = null;
+
+function setSaveStatus(message, state){
+  const el = document.getElementById("saveStatus");
+  if(!el) return;
+  el.textContent = message;
+  el.classList.remove("is-dirty","is-draft","is-restored","is-saved","is-error");
+  if(state) el.classList.add(state);
+}
 
 function applyColor(sel){
   sel.classList.remove("is-da","is-nu");
@@ -428,7 +483,55 @@ async function init(){
     document.getElementById("adminLink").style.display = "";
     document.getElementById("addRowBtn").style.display = "";
   }
+  setupSputnikDraftPersistence();
   load();
+}
+
+function isSputnikLeader(){
+  return user && user.role === "leader";
+}
+
+function readSputnikDraft(){
+  try {
+    const raw = localStorage.getItem(SPUTNIK_DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function clearSputnikDraft(){
+  localStorage.removeItem(SPUTNIK_DRAFT_KEY);
+}
+
+function saveSputnikDraft(){
+  if(!isSputnikLeader()) return;
+  const draft = {
+    rows: collectData(),
+    savedAt: Date.now()
+  };
+  localStorage.setItem(SPUTNIK_DRAFT_KEY, JSON.stringify(draft));
+  setSaveStatus("Draft salvat automat", "is-draft");
+}
+
+function queueSputnikDraftSave(){
+  if(!isSputnikLeader()) return;
+  clearTimeout(draftSaveTimer);
+  setSaveStatus("Modificari nesalvate", "is-dirty");
+  draftSaveTimer = setTimeout(saveSputnikDraft, 250);
+}
+
+function setupSputnikDraftPersistence(){
+  const tbody = document.getElementById("tableBody");
+  tbody.addEventListener("input", (event) => {
+    if(event.target.matches("input")) queueSputnikDraftSave();
+  });
+  tbody.addEventListener("change", (event) => {
+    if(event.target.matches("input, select")) queueSputnikDraftSave();
+  });
+  window.addEventListener("beforeunload", () => {
+    saveSputnikDraft();
+  });
 }
 
 function sortByGrade(data){
@@ -469,13 +572,65 @@ function deleteRow(rowIndex){
   if(rowIndex < 0 || rowIndex >= currentData.length) return;
   currentData.splice(rowIndex, 1);
   createRows(currentData);
+  queueSputnikDraftSave();
 }
 
 function addRow(){
   createRows([...collectData(), {
-    nume: "", cnp: "", telefon: "", grad: grades[0],
+    nume: "", cnp: "", telefon: "", grad: grades[grades.length - 1],
     task: "Nu", taskAvansari: "", invoire: "Nu", prezenta: "Nu"
   }]);
+  queueSputnikDraftSave();
+}
+
+function getSputnikRowCnp(row){
+  const inputs = row.querySelectorAll("input");
+  if(inputs[1]) return inputs[1].value.trim();
+  const cell = row.children[2];
+  if(!cell) return "";
+  const value = cell.textContent.trim();
+  return value === "â€”" || value === "—" ? "" : value;
+}
+
+function setSputnikInvoireCell(cell, status){
+  if(!cell) return;
+  const normalized = status === "Da" ? "Da" : "Nu";
+  cell.dataset.invoire = normalized;
+  cell.textContent = normalized;
+  cell.classList.toggle("is-da", normalized === "Da");
+  cell.classList.toggle("is-nu", normalized !== "Da");
+}
+
+async function refreshSputnikInvoireStatuses(){
+  const rows = Array.from(document.querySelectorAll("#tableBody tr"));
+  if(!rows.length) return;
+  const res = await fetch("/sputnik-all", { cache: "no-store" });
+  if(!res.ok) return;
+  const data = await res.json();
+  const statusByCnp = new Map(
+    data
+      .filter(item => item && item.cnp)
+      .map(item => [String(item.cnp).trim(), item.invoire === "Da" ? "Da" : "Nu"])
+  );
+  rows.forEach((row) => {
+    const cell = row.querySelector("[data-invoire-cell]");
+    if(!cell) return;
+    const cnp = getSputnikRowCnp(row);
+    setSputnikInvoireCell(cell, cnp ? (statusByCnp.get(cnp) || "Nu") : "Nu");
+  });
+}
+
+function setupSputnikInvoireRefresh(){
+  if(invoireRefreshTimer) clearInterval(invoireRefreshTimer);
+  invoireRefreshTimer = setInterval(() => {
+    refreshSputnikInvoireStatuses().catch(() => {});
+  }, INVOIRE_REFRESH_MS);
+  window.addEventListener("focus", () => {
+    refreshSputnikInvoireStatuses().catch(() => {});
+  });
+  document.addEventListener("visibilitychange", () => {
+    if(!document.hidden) refreshSputnikInvoireStatuses().catch(() => {});
+  });
 }
 
 function createRows(data=[]){
@@ -504,7 +659,7 @@ function createRows(data=[]){
         <td><select class="grade-select">${grades.map(g=>`<option ${d.grad===g?"selected":""}>${g}</option>`).join("")}</select></td>
         <td>${daNu(d.task)}</td>
         <td><input value="${d.taskAvansari||""}" placeholder="—"></td>
-        <td><span class="danu-text ${d.invoire=="Da"?"is-da":"is-nu"}" data-invoire="${d.invoire||"Nu"}">${d.invoire||"Nu"}</span></td>
+        <td><span class="danu-text ${d.invoire=="Da"?"is-da":"is-nu"}" data-invoire="${d.invoire||"Nu"}" data-invoire-cell>${d.invoire||"Nu"}</span></td>
         <td>${daNu(d.prezenta)}</td>
         <td style="text-align:center">${d.amendaActiva?'⚠️':'<span style="color:var(--muted)">—</span>'}</td>
       </tr>`;
@@ -519,7 +674,7 @@ function createRows(data=[]){
         <td><span class="grade-text">${d.grad||grades[0]}</span></td>
         <td>${dn(d.task)}</td>
         <td>${sv(d.taskAvansari)}</td>
-        <td>${dn(d.invoire)}</td>
+        <td><span class="danu-text ${d.invoire=="Da"?"is-da":"is-nu"}" data-invoire="${d.invoire||"Nu"}" data-invoire-cell>${d.invoire||"Nu"}</span></td>
         <td>${dn(d.prezenta)}</td>
         <td style="text-align:center">${d.amendaActiva?'⚠️':'<span style="color:var(--muted)">—</span>'}</td>
       </tr>`;
@@ -554,7 +709,16 @@ function createRows(data=[]){
 async function load(){
   const res = await fetch("/sputnik-all");
   const data = await res.json();
-  createRows(data);
+  const draft = isSputnikLeader() ? readSputnikDraft() : null;
+  if(draft && Array.isArray(draft.rows)){
+    createRows(draft.rows);
+    setSaveStatus("Draft local restaurat", "is-restored");
+    showToast("Draft local restaurat");
+  } else {
+    createRows(data);
+    setSaveStatus("Salvat in baza de date", "is-saved");
+  }
+  refreshSputnikInvoireStatuses().catch(() => {});
 }
 
 async function save(){
@@ -564,8 +728,15 @@ async function save(){
     (d.telefon && d.telefon.trim() !== "") ||
     (d.taskAvansari && d.taskAvansari.trim() !== "")
   );
-  await fetch("/sputnik-all",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-  showToast();
+  const res = await fetch("/sputnik-all",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  if(!res.ok){
+    setSaveStatus("Eroare la salvare", "is-error");
+    showToast("Eroare la salvare");
+    return;
+  }
+  clearSputnikDraft();
+  setSaveStatus("Salvat in baza de date", "is-saved");
+  showToast("Date salvate cu succes");
 }
 function showToast(msg){
   const t = document.getElementById("toast");
@@ -580,6 +751,7 @@ async function logout(){
 }
 
 init();
+setupSputnikInvoireRefresh();
 </script>
 <script src="sidebar.js"></script>
 <script src="notifications.js"></script>

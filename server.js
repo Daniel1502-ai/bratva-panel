@@ -754,12 +754,16 @@ app.get("/sputnik-all", requireAuth, (req, res) => {
             db.prepare(`SELECT * FROM ${sputnikTable(n)}`).all().map(r => ({ ...r, sourcePage: n }))
         );
     }
-    const today = new Date().toISOString().substring(0, 10);
+    const set = getActiveInvoireCnps((req.session.user.org || 'bratva').toLowerCase());
     const cnps = rows.map(r => r.cnp).filter(Boolean);
     const amenziActiva = cnps.length ? db.prepare(
         `SELECT cnp FROM amenzi WHERE status='activa' AND cnp IN (${cnps.map(()=>'?').join(',')})`
     ).all(...cnps).map(r => r.cnp) : [];
-    const result = rows.map(r => ({ ...r, amendaActiva: amenziActiva.includes(r.cnp) }));
+    const result = rows.map(r => ({
+        ...r,
+        invoire: (r.cnp && set.has(r.cnp.trim())) ? "Da" : "Nu",
+        amendaActiva: amenziActiva.includes(r.cnp)
+    }));
     res.json(result);
 });
 
