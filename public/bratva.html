@@ -836,6 +836,7 @@ const INVOIRE_REFRESH_MS = 15000;
 const BRATVA_DRAFT_KEY = "bratva-panel-bratva-draft-v1";
 let invoireRefreshTimer = null;
 let draftSaveTimer = null;
+let hasUnsavedBratvaChanges = false;
 
 function setSaveStatus(message, state){
   const el = document.getElementById("saveStatus");
@@ -875,7 +876,7 @@ function clearBratvaDraft(){
 }
 
 function saveBratvaDraft(){
-  if(!isBratvaLeader()) return;
+  if(!isBratvaLeader() || !hasUnsavedBratvaChanges) return;
   const draft = {
     main: collectData(),
     recuperari: Array.isArray(recuperariData) ? recuperariData : [],
@@ -889,6 +890,7 @@ function saveBratvaDraft(){
 function queueBratvaDraftSave(){
   if(!isBratvaLeader()) return;
   clearTimeout(draftSaveTimer);
+  hasUnsavedBratvaChanges = true;
   setSaveStatus("Modificari nesalvate", "is-dirty");
   draftSaveTimer = setTimeout(saveBratvaDraft, 250);
 }
@@ -902,7 +904,7 @@ function setupBratvaDraftPersistence(){
     if(event.target.matches("input, select")) queueBratvaDraftSave();
   });
   window.addEventListener("beforeunload", () => {
-    saveBratvaDraft();
+    if(hasUnsavedBratvaChanges) saveBratvaDraft();
   });
 }
 
@@ -1209,13 +1211,15 @@ async function load(){
     recuperariData = Array.isArray(draft.recuperari) ? draft.recuperari : serverRecuperari;
     retiredData = Array.isArray(draft.retired) ? draft.retired : serverRetired;
     createRows(draft.main);
+    hasUnsavedBratvaChanges = true;
     setSaveStatus("Draft local restaurat", "is-restored");
     showToast("Draft local restaurat");
   } else {
     recuperariData = serverRecuperari;
     retiredData = serverRetired;
     createRows(serverMain);
-    setSaveStatus("Salvat in baza de date", "is-saved");
+    hasUnsavedBratvaChanges = false;
+    setSaveStatus("Sincronizat", "is-saved");
   }
   refreshBratvaInvoireStatuses().catch(() => {});
 }
@@ -1232,8 +1236,10 @@ async function save(){
     showToast("Eroare la salvare");
     return;
   }
+  clearTimeout(draftSaveTimer);
+  hasUnsavedBratvaChanges = false;
   clearBratvaDraft();
-  setSaveStatus("Salvat in baza de date", "is-saved");
+  setSaveStatus("Sincronizat", "is-saved");
   showToast("Date salvate cu succes");
 }
 

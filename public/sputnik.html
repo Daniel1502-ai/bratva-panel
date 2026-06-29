@@ -459,6 +459,7 @@ const INVOIRE_REFRESH_MS = 15000;
 const SPUTNIK_DRAFT_KEY = "bratva-panel-sputnik-draft-v1";
 let invoireRefreshTimer = null;
 let draftSaveTimer = null;
+let hasUnsavedSputnikChanges = false;
 
 function setSaveStatus(message, state){
   const el = document.getElementById("saveStatus");
@@ -505,7 +506,7 @@ function clearSputnikDraft(){
 }
 
 function saveSputnikDraft(){
-  if(!isSputnikLeader()) return;
+  if(!isSputnikLeader() || !hasUnsavedSputnikChanges) return;
   const draft = {
     rows: collectData(),
     savedAt: Date.now()
@@ -517,6 +518,7 @@ function saveSputnikDraft(){
 function queueSputnikDraftSave(){
   if(!isSputnikLeader()) return;
   clearTimeout(draftSaveTimer);
+  hasUnsavedSputnikChanges = true;
   setSaveStatus("Modificari nesalvate", "is-dirty");
   draftSaveTimer = setTimeout(saveSputnikDraft, 250);
 }
@@ -530,7 +532,7 @@ function setupSputnikDraftPersistence(){
     if(event.target.matches("input, select")) queueSputnikDraftSave();
   });
   window.addEventListener("beforeunload", () => {
-    saveSputnikDraft();
+    if(hasUnsavedSputnikChanges) saveSputnikDraft();
   });
 }
 
@@ -712,11 +714,13 @@ async function load(){
   const draft = isSputnikLeader() ? readSputnikDraft() : null;
   if(draft && Array.isArray(draft.rows)){
     createRows(draft.rows);
+    hasUnsavedSputnikChanges = true;
     setSaveStatus("Draft local restaurat", "is-restored");
     showToast("Draft local restaurat");
   } else {
     createRows(data);
-    setSaveStatus("Salvat in baza de date", "is-saved");
+    hasUnsavedSputnikChanges = false;
+    setSaveStatus("Sincronizat", "is-saved");
   }
   refreshSputnikInvoireStatuses().catch(() => {});
 }
@@ -734,8 +738,10 @@ async function save(){
     showToast("Eroare la salvare");
     return;
   }
+  clearTimeout(draftSaveTimer);
+  hasUnsavedSputnikChanges = false;
   clearSputnikDraft();
-  setSaveStatus("Salvat in baza de date", "is-saved");
+  setSaveStatus("Sincronizat", "is-saved");
   showToast("Date salvate cu succes");
 }
 function showToast(msg){

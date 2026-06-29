@@ -591,26 +591,45 @@ function addDays(dateStr, days) {
     return d.toISOString().substring(0, 10);
 }
 
-function parseInvoireDateTime(dateStr, timeStr, fallbackTime) {
-    if (!dateStr) return null;
-    const safeTime = /^\d{2}:\d{2}$/.test(timeStr || '') ? timeStr : fallbackTime;
-    const value = new Date(`${dateStr}T${safeTime}:00`);
-    return Number.isNaN(value.getTime()) ? null : value;
+const INVOIRE_TIMEZONE = "Europe/Bucharest";
+
+function normalizeInvoireTime(timeStr, fallbackTime) {
+    return /^\d{2}:\d{2}$/.test(timeStr || '') ? timeStr : fallbackTime;
+}
+
+function buildInvoireDateTimeKey(dateStr, timeStr, fallbackTime) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr || '')) return null;
+    return `${dateStr}T${normalizeInvoireTime(timeStr, fallbackTime)}`;
+}
+
+function getBucharestNowKey(now = new Date()) {
+    const parts = new Intl.DateTimeFormat("sv-SE", {
+        timeZone: INVOIRE_TIMEZONE,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23"
+    }).formatToParts(now);
+    const map = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+    return `${map.year}-${map.month}-${map.day}T${map.hour}:${map.minute}`;
 }
 
 function getInvoireStart(row) {
-    return parseInvoireDateTime(row.startDate, row.startTime || row.ora, "00:00");
+    return buildInvoireDateTimeKey(row.startDate, row.startTime || row.ora, "00:00");
 }
 
 function getInvoireEnd(row) {
-    return parseInvoireDateTime(row.endDate, row.endTime || row.ora, "23:59");
+    return buildInvoireDateTimeKey(row.endDate, row.endTime || row.ora, "23:59");
 }
 
 function isInvoireActive(row, now = new Date()) {
     const start = getInvoireStart(row);
     const end = getInvoireEnd(row);
     if (!start || !end) return false;
-    return start.getTime() <= now.getTime() && now.getTime() <= end.getTime();
+    const nowKey = getBucharestNowKey(now);
+    return start <= nowKey && nowKey <= end;
 }
 
 function getActiveInvoireCnps(org) {
