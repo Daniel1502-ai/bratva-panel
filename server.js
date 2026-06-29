@@ -13,6 +13,16 @@ const dbPath =
     : path.join(__dirname, "database.db"));
 const db = new Database(dbPath);
 
+function tableHasColumn(tableName, columnName) {
+    return db.prepare(`PRAGMA table_info(${tableName})`).all().some((column) => column.name === columnName);
+}
+
+function ensureColumn(tableName, columnDefinition) {
+    const columnName = columnDefinition.trim().split(/\s+/)[0];
+    if (tableHasColumn(tableName, columnName)) return;
+    db.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnDefinition}`);
+}
+
 // ── DISCORD WEBHOOK ──
 const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1503895904934035601/Qdu4p91CB4XpO4bE5a1QsxOtjClIpxY9OgnlGMicx6yvUlaF2Eo5o2oxDlLz0mLG_jkM";
 
@@ -128,18 +138,16 @@ db.exec(`CREATE TABLE IF NOT EXISTS invoiri (
     motiv TEXT,
     createdAt TEXT DEFAULT (datetime('now'))
 )`);
-try { db.exec(`ALTER TABLE invoiri ADD COLUMN ora TEXT`); } catch {}
-try { db.exec(`ALTER TABLE invoiri ADD COLUMN startTime TEXT`); } catch {}
-try { db.exec(`ALTER TABLE invoiri ADD COLUMN endTime TEXT`); } catch {}
-try { db.exec(`ALTER TABLE invoiri ADD COLUMN org TEXT DEFAULT 'bratva'`); } catch {}
+ensureColumn('invoiri', `ora TEXT`);
+ensureColumn('invoiri', `startTime TEXT`);
+ensureColumn('invoiri', `endTime TEXT`);
+ensureColumn('invoiri', `org TEXT DEFAULT 'bratva'`);
 db.exec(`CREATE TABLE IF NOT EXISTS service (
     id INTEGER PRIMARY KEY,
     nume TEXT, grad TEXT, pontaj TEXT
 )`);
 try { db.exec(`ALTER TABLE service ADD COLUMN cnp TEXT`); } catch {}
 try { db.exec(`ALTER TABLE service ADD COLUMN telefon TEXT`); } catch {}
-try { db.exec(`ALTER TABLE invoiri ADD COLUMN org TEXT DEFAULT 'bratva'`); } catch {}
-try { db.exec(`ALTER TABLE invoiri ADD COLUMN ora TEXT DEFAULT NULL`); } catch {}
 try { db.exec(`ALTER TABLE notifications ADD COLUMN org TEXT DEFAULT 'bratva'`); } catch {}
 
 // AMENZI TABLE
@@ -622,6 +630,13 @@ function getInvoireStart(row) {
 
 function getInvoireEnd(row) {
     return buildInvoireDateTimeKey(row.endDate, row.endTime || row.ora, "23:59");
+}
+
+function parseInvoireDateTime(dateStr, timeStr, fallbackTime) {
+    const key = buildInvoireDateTimeKey(dateStr, timeStr, fallbackTime);
+    if (!key) return null;
+    const value = new Date(`${key}:00`);
+    return Number.isNaN(value.getTime()) ? null : value;
 }
 
 function isInvoireActive(row, now = new Date()) {
